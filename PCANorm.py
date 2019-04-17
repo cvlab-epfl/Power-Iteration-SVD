@@ -1,0 +1,232 @@
+import torch
+import numbers
+from torch.nn.parameter import Parameter
+from time import sleep
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import copy
+from torch.nn.functional import normalize
+from torch.nn.utils import spectral_norm
+
+
+class myBatchNorm(nn.Module):
+
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True):
+        super(myBatchNorm, self).__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+
+        self.weight = Parameter(torch.Tensor(num_features, 1))
+        self.bias = Parameter(torch.Tensor(num_features, 1))
+
+        self.register_buffer('running_mean', torch.zeros(num_features, 1))
+        self.register_buffer('running_var', torch.ones(num_features, 1))
+
+        self.reset_parameters()
+
+    def reset_running_stats(self):
+            self.running_mean.zero_()
+            self.running_var.fill_(1)
+
+    def reset_parameters(self):
+        self.reset_running_stats()
+        if self.affine:
+            self.weight.data.uniform_()
+            self.bias.data.zero_()
+
+    def _check_input_dim(self, input):
+        if input.dim() != 4:
+            raise ValueError('expected 4D input (got {}D input)'
+                             .format(input.dim()))
+
+    def forward(self, x):
+        self._check_input_dim(x)
+
+        if self.training:
+            # print('batch norm training')
+            N, C, H, W = x.size()
+            x = x.transpose(0, 1).contiguous().view(C, -1)
+            mu = x.mean(1, keepdim=True)
+            sigma = x.var(1, keepdim=True)
+            # print('mu, sigma shape {} {}'.format(mu.size(), sigma.size()))
+            # print('current mu {}'.format(mu.transpose(0, 1)))
+            # print('current sigma {}'.format(sigma.transpose(0, 1)))
+            with torch.no_grad():
+                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
+                self.running_var = (1 - self.momentum) * self.running_var + self.momentum * sigma
+
+            # print('previous x {}'.format(x))
+
+            x = x - mu
+            x = x / (sigma + self.eps).sqrt()
+            # x = x - self.running_mean
+            # x = x / (self.running_var + self.eps).sqrt()
+            x = x * self.weight + self.bias
+
+            # print('current x{}'.format(x))
+            # if (x != x).any():
+            #     print('nan occurs in batch norm ... ')
+            #     print('current x{}'.format(x))
+            #     while True:
+            #         sleep(1)
+
+            x = x.view(C, N, H, W).transpose(0, 1)
+            return x
+
+        else:
+            N, C, H, W = x.size()
+            x = x.transpose(0, 1).contiguous().view(C, -1)
+            x = (x - self.running_mean) / (self.running_var + self.eps).sqrt()
+            x = x * self.weight + self.bias
+            x = x.view(C, N, H, W).transpose(0, 1)
+            return x
+
+    def extra_repr(self):
+        return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
+               'track_running_stats={track_running_stats}'.format(**self.__dict__)
+
+    def _load_from_state_dict(self, state_dict, prefix, metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+
+        super(myBatchNorm, self)._load_from_state_dict(
+            state_dict, prefix, metadata, strict,
+            missing_keys, unexpected_keys, error_msgs)
+
+
+class myGroupNorm(nn.Module):
+    def __init__(self, num_groups=32, num_features=0, eps=1e-5):
+        super(myGroupNorm, self).__init__()
+        assert num_features > 0
+        self.weight = nn.Parameter(torch.ones(1,num_features,1,1))
+        self.bias = nn.Parameter(torch.zeros(1,num_features,1,1))
+        self.num_groups = num_groups
+        self.eps = eps
+
+    def forward(self, x):
+        N,C,H,W = x.size()
+        G = self.num_groups
+        assert C % G == 0
+
+        x = x.view(N,G,-1)
+        mean = x.mean(-1, keepdim=True)
+        var = x.var(-1, keepdim=True)
+
+        x = (x-mean) / (var+self.eps).sqrt()
+        x = x.view(N,C,H,W)
+        return x * self.weight + self.bias
+
+
+class myPCANorm(nn.Module):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=10, n_eigens=32):
+        super(myPCANorm, self).__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+        self.n_power_iterations = n_power_iterations
+        self.n_eigens = n_eigens
+
+        self.weight = Parameter(torch.Tensor(num_features, 1))
+        self.bias = Parameter(torch.Tensor(num_features, 1))
+
+        self.register_buffer('running_mean', torch.zeros(num_features, 1))
+        self.register_buffer('running_var', torch.ones(num_features, 1))
+        self.register_buffer('running_subspace', torch.eye(num_features, num_features))
+
+        self.reset_parameters()
+
+    def reset_running_stats(self):
+            self.running_mean.zero_()
+            self.running_var.fill_(1)
+            self.running_subspace.zero_()
+
+    def reset_parameters(self):
+        self.reset_running_stats()
+        if self.affine:
+            self.weight.data.uniform_()
+            self.bias.data.zero_()
+
+    def _check_input_dim(self, input):
+        if input.dim() != 4:
+            raise ValueError('expected 4D input (got {}D input)'
+                             .format(input.dim()))
+
+    def forward(self, x):
+        self._check_input_dim(x)
+
+        if self.training:
+
+            N, C, H, W = x.size()
+            x = x.transpose(0, 1).contiguous().view(C, -1)
+            mu = x.mean(1, keepdim=True)
+            sigma = x.var(1, keepdim=True)
+            x = x / (sigma + self.eps).sqrt()
+            xxt = torch.mm(x, x.t())
+            vlist = []
+            for i in range(self.n_eigens):
+                vlist.append(torch.ones(self.num_features, 1).cuda())
+            for i in range(self.n_eigens):
+                v = vlist[i]
+                for _ in range(self.n_power_iterations):
+                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
+                # eig_lambda = torch.mean(torch.matmul(xx, v)/v)
+                xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
+                # eig_vector = torch.mean(torch.matmul(xx, v) / v)
+            xr = torch.zeros(x.t().shape).cuda()
+            for i in range(self.n_eigens):
+                v = vlist[i]
+                tmp = torch.mm(torch.mm(x.t(), v), v.t())
+                xr = xr + tmp
+
+            with torch.no_grad():
+                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
+                self.running_var = (1 - self.momentum) * self.running_var + self.momentum * sigma
+                for i in range(self.n_eigens):
+                    v = vlist[i]
+                    self.running_subspace = (1 - self.momentum) * self.running_subspace + self.momentum * torch.mm(v, v.t())
+
+            xr = xr.t() * self.weight + self.bias
+            xr = xr.view(C, N, H, W).transpose(0, 1)
+            return xr
+
+        else:
+            N, C, H, W = x.size()
+            x = x.transpose(0, 1).contiguous().view(C, -1)
+            x = (x - self.running_mean) / (self.running_var + self.eps).sqrt()
+            xxt = torch.mm(x, x.t())
+            vlist = []
+            for i in range(self.n_eigens):
+                vlist.append(torch.ones(self.num_features, 1).cuda())
+            for i in range(self.n_eigens):
+                v = vlist[i]
+                for _ in range(self.n_power_iterations):
+                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
+                # eig_lambda = torch.mean(torch.matmul(xx, v)/v)
+                xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
+                # eig_vector = torch.mean(torch.matmul(xx, v) / v)
+            xr = torch.zeros(x.t().shape).cuda()
+            for i in range(self.n_eigens):
+                v = vlist[i]
+                tmp = torch.mm(torch.mm(x.t(), v), v.t())
+                xr = xr + tmp
+
+            xr = xr.t() * self.weight + self.bias
+            xr = xr.view(C, N, H, W).transpose(0, 1)
+            # x = torch.mm(x.t(), self.running_subspace).t()
+            # x = x * self.weight + self.bias
+            # x = x.view(C, N, H, W).transpose(0, 1)
+            return xr
+
+    def extra_repr(self):
+        return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
+               'track_running_stats={track_running_stats}'.format(**self.__dict__)
+
+    def _load_from_state_dict(self, state_dict, prefix, metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+
+        super(myPCANorm, self)._load_from_state_dict(
+            state_dict, prefix, metadata, strict,
+            missing_keys, unexpected_keys, error_msgs)
