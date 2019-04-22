@@ -164,6 +164,7 @@ class myZCANorm(nn.Module):
             x = x.transpose(0, 1).contiguous().view(C, -1)
             mu = x.mean(1, keepdim=True)
             sigma = x.var(1, keepdim=True)
+            x = x - mu
             x = x / (sigma + self.eps).sqrt()
             xxt = torch.mm(x, x.t())/(x.shape[1]-1) + torch.eye(C).cuda() * self.eps
             vlist = []
@@ -248,7 +249,7 @@ class myZCANorm(nn.Module):
 
 
 class myPCANorm(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=10, n_eigens=32):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=20, n_eigens=32):
         super(myPCANorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -291,6 +292,7 @@ class myPCANorm(nn.Module):
             x = x.transpose(0, 1).contiguous().view(C, -1)
             mu = x.mean(1, keepdim=True)
             sigma = x.var(1, keepdim=True)
+            x = x - mu
             x = x / (sigma + self.eps).sqrt()
             xxt = torch.mm(x, x.t())/(x.shape[1]-1) + torch.eye(C).cuda() * self.eps
             vlist = []
@@ -300,8 +302,8 @@ class myPCANorm(nn.Module):
             for i in range(self.n_eigens):
                 v = vlist[i]
                 for _ in range(self.n_power_iterations):
-                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-                    # v = self.power_layer(xxt, v)
+                    # v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
+                    v = self.power_layer(xxt, v)
                 # eig_lambda = torch.mean(torch.matmul(xxt, v)/v)
                 # print('{} eig value {}'.format(i, eig_lambda))
                 # sleep(1)
