@@ -75,6 +75,8 @@ elif norm == 'instancenorm':
     Norm = nn.InstanceNorm2d
 elif norm == 'layernorm':
     Norm = nn.LayerNorm
+elif norm == 'zcanorm':
+    Norm = myZCANorm
 elif norm == 'pcanorm':
     Norm = myPCANorm
 # net = VGG('VGG19')
