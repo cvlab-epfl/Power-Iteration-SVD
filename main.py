@@ -79,6 +79,8 @@ elif norm == 'zcanorm':
     Norm = myZCANorm
 elif norm == 'pcanorm':
     Norm = myPCANorm
+elif norm == 'pcanorm-norec':
+    Norm = myPCANorm_noRec
 # net = VGG('VGG19')
 net = ResNet50(Norm)
 # net = PreActResNet18()
