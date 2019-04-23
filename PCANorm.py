@@ -249,7 +249,7 @@ class myZCANorm(nn.Module):
 
 
 class myPCANorm(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=20, n_eigens=64):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=10, n_eigens=32):
         super(myPCANorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -300,10 +300,11 @@ class myPCANorm(nn.Module):
             for i in range(self.n_eigens):
                 vlist.append(torch.ones(self.num_features, 1).cuda())
             for i in range(self.n_eigens):
+                # print('debugging eigen vector list i ', vlist[i].t())
                 v = vlist[i]
                 for _ in range(self.n_power_iterations):
-                    # v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-                    v = self.power_layer(xxt, v)
+                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
+                    # v = self.power_layer(xxt, v)
                 # eig_lambda = torch.mean(torch.matmul(xxt, v)/v)
                 # print('{} eig value {}'.format(i, eig_lambda))
                 # sleep(1)
@@ -311,7 +312,14 @@ class myPCANorm(nn.Module):
                 #     # print('{} negative eig value is detected'.format(i))
                 #     break
                 # lambdalist.append(eig_lambda)
+                vlist[i] = v
                 xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
+                # print('candidate value is ', v.t())
+                # print('updated value is ', vlist[i].t())
+                # if i == 1:
+                #     print('previous updated value is ', vlist[i-1].t())
+                # print('sleeping for 10 seconds')
+                # sleep(10)
             xr = torch.zeros(x.t().shape).cuda()
 
             for i in range(self.n_eigens):  # range(len(lambdalist))
@@ -410,11 +418,14 @@ class myPCANorm_noRec(nn.Module):
             # lambdalist = []
             for i in range(self.n_eigens):
                 vlist.append(torch.ones(self.num_features, 1).cuda())
+
+            print('debugging eigen vector list')
             for i in range(self.n_eigens):
                 v = vlist[i]
+                print('initial value is ', vlist[i].t())
                 for _ in range(self.n_power_iterations):
-                    # v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-                    v = self.power_layer(xxt, v)
+                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
+                    # v = self.power_layer(xxt, v)
                 # eig_lambda = torch.mean(torch.matmul(xxt, v)/v)
                 # print('{} eig value {}'.format(i, eig_lambda))
                 # sleep(1)
@@ -423,16 +434,18 @@ class myPCANorm_noRec(nn.Module):
                 #     break
                 # lambdalist.append(eig_lambda)
                 xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
-            xr = torch.zeros(x.t().shape).cuda()
-
+                print('candidate value is ', v.t())
+                print('updated value is ', vlist[i].t())
+                print('sleeping for 10 seconds')
+                sleep(10)
+            xr_list = []
             for i in range(self.n_eigens):  # range(len(lambdalist))
                 v = vlist[i]
                 # eig_lambda = lambdalist[i]
                 # tmp = torch.mm(torch.mm(x.t(), v), v.t())/torch.sqrt(eig_lambda+self.eps)
-                tmp = torch.mm(x.t(), v)
-                xr_slice = xr.narrow(1, i, 1)
-                xr_slice = tmp
+                xr_list.append(torch.mm(x.t(), v))
 
+            xr = torch.cat(xr_list, 1)
             with torch.no_grad():
                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
                 self.running_var = (1 - self.momentum) * self.running_var + self.momentum * sigma
