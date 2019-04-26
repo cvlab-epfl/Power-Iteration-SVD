@@ -65,11 +65,19 @@ class Bottleneck(nn.Module):
         return out
 
 
+from time import sleep
+
+
+def print_grad_(grad):
+    print('debug 1')
+    print(grad)
+    sleep(5)
+
+
 class ResNet(nn.Module):
     def __init__(self, Norm, block, num_blocks, num_classes=10):
         super(ResNet, self).__init__()
         self.in_planes = 64
-
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = Norm(64, affine=True) if Norm in [nn.BatchNorm2d, nn.InstanceNorm2d, myBatchNorm, myPCANorm, myZCANorm, myPCANorm_noRec] else Norm(32, 64)
         self.layer1 = self._make_layer(nn.BatchNorm2d, block, 64, num_blocks[0], stride=1)
@@ -91,7 +99,10 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.conv1(x)
+        out = self.bn1(out)
+        # out.register_hook(print_grad_)
+        out = F.relu(out)
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)

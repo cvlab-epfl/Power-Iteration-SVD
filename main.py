@@ -152,6 +152,7 @@ def train(epoch):
         # targets = torch.load('target-31-1188.pt')
         # start_time = time.time()
         outputs = net(inputs)
+
         # elapsed_time = time.time() - start_time
         # print('forward consumes time: {}'.format(elapsed_time))
         # embed()
@@ -184,7 +185,6 @@ def train(epoch):
         #         sleep(1)
         # print('backwarding..')
         loss.backward()
-
         # for n, p in net.named_parameters():
         #     if p.requires_grad:
         #         if (p.grad != p.grad).any():
