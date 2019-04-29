@@ -82,7 +82,7 @@ elif norm == 'pcanorm':
 elif norm == 'pcanorm-norec':
     Norm = myPCANorm_noRec
 # net = VGG('VGG19')
-net = ResNet50(Norm)
+net = resnet18(Norm=Norm)  # ResNet50(Norm)
 # net = PreActResNet18()
 # net = GoogLeNet()
 # net = DenseNet121()
@@ -97,7 +97,7 @@ net = ResNet50(Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name, '{}-bs{}'.format(norm, BatchSize), str(id))
+logdir = os.path.join(save_dir, model_name+'18', '{}-bs{}'.format(norm, BatchSize), str(id))
 
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
@@ -213,8 +213,8 @@ def train(epoch):
         #             print('net {} param weights is OK'.format(n))
 
         optimizer.step()
-
-        writer.add_scalar('loss/train_loss', loss.item(), epoch*len(trainloader)+batch_idx+1)
+        if batch_idx % 500 == 0:
+            writer.add_scalar('loss/train_loss', loss.item(), epoch*len(trainloader)+batch_idx+1)
         train_loss += loss.item()
         _, predicted = outputs.max(1)
         total += targets.size(0)

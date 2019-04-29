@@ -1,11 +1,11 @@
 # Don't track content of these folder/
 .idea/
-matlab/
+# matlab/
 
 # Compiled source #
 ###################
 *.xml
-*.m
+# *.m
 
 *.com
 *.class

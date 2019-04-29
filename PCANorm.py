@@ -121,7 +121,7 @@ class myGroupNorm(nn.Module):
 
 
 class myZCANorm(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=10, n_eigens=32):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=20, n_eigens=40):
         super(myZCANorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -130,14 +130,16 @@ class myZCANorm(nn.Module):
         self.n_power_iterations = n_power_iterations
         self.n_eigens = n_eigens
 
-        self.weight = Parameter(torch.Tensor(num_features, 1))
-        self.bias = Parameter(torch.Tensor(num_features, 1))
-        self.power_layer = power_iteration.apply
-        self.register_buffer('running_mean', torch.zeros(num_features, 1))
-        self.register_buffer('running_var', torch.ones(num_features, 1))
-        self.register_buffer('running_subspace', torch.eye(num_features, num_features))
+        self.weight = Parameter(torch.Tensor(num_features, 1).double())
+        self.bias = Parameter(torch.Tensor(num_features, 1).double())
+        # self.power_layer = power_iteration()
+        self.power_layer = power_iteration_once.apply
+        self.register_buffer('running_mean', torch.zeros(num_features, 1).double())
+        self.register_buffer('running_var', torch.ones(num_features, 1).double())
+        self.register_buffer('running_subspace', torch.eye(num_features, num_features).double())
 
         self.reset_parameters()
+        self.create_dictionary()
 
     def reset_running_stats(self):
             self.running_mean.zero_()
@@ -155,86 +157,82 @@ class myZCANorm(nn.Module):
             raise ValueError('expected 4D input (got {}D input)'
                              .format(input.dim()))
 
+    def create_dictionary(self):
+        for i in range(self.n_eigens):
+            self.register_buffer("{}".format(i), th.ones(self.num_features, 1, requires_grad=True).double())
+        self.eig_dict = self.state_dict()
+
+    def reset_dictionary(self):
+        for i in range(self.n_eigens):
+            self.eig_dict[str(i)].data.normal_(0, 1)
+            self.eig_dict[str(i)].data /= torch.norm(self.eig_dict[str(i)].data)
+            self.state_dict()[str(i)].copy_(self.eig_dict[str(i)])
+            # self.eig_dict[str(i)] = torch.ones(self.num_features, 1, requires_grad=True).double()
+            # self.eig_dict[str(i)].grad.zero_()
+
     def forward(self, x):
         self._check_input_dim(x)
+        self.reset_dictionary()
+        self.eig_dict = self.state_dict()
 
         if self.training:
-
+            x = x.double()
             N, C, H, W = x.size()
             x = x.transpose(0, 1).contiguous().view(C, -1)
             mu = x.mean(1, keepdim=True)
             sigma = x.var(1, keepdim=True)
+
             x = x - mu
             x = x / (sigma + self.eps).sqrt()
-            xxt = torch.mm(x, x.t())/(x.shape[1]-1) + torch.eye(C).cuda() * self.eps
-            vlist = []
+            xxt = torch.mm(x, x.t())/(x.shape[1]-1) + torch.eye(C).cuda().double() * self.eps
+
             lambdalist = []
+            lambda_sum = 0
+
             for i in range(self.n_eigens):
-                vlist.append(torch.ones(self.num_features, 1).cuda())
-            for i in range(self.n_eigens):
-                v = vlist[i]
-                for _ in range(self.n_power_iterations):
-                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-                    # v = self.power_layer(xxt, v)
-                eig_lambda = torch.mean(torch.matmul(xxt, v)/v)
-                # print('{} eig value {}'.format(i, eig_lambda))
-                # sleep(1)
-                if eig_lambda < 0:
-                    # print('{} negative eig value is detected'.format(i))
+                self.eig_dict[str(i)] = self.power_layer(xxt, self.eig_dict[str(i)])
+                eig_lambda = torch.matmul(self.eig_dict[str(i)].t(), torch.matmul(xxt, self.eig_dict[str(i)]))
+                if eig_lambda <= 0:
+                    print('eig_lambda is negative or 0', eig_lambda.item())
                     break
                 lambdalist.append(eig_lambda)
-                xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
-            xr = torch.zeros(x.t().shape).cuda()
+                lambda_sum += eig_lambda
+                energy_lower_bound = lambda_sum/(lambda_sum + eig_lambda*(C-(i+1)))
+                if energy_lower_bound >= 0.95:
+                    break
+                xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
+            xr = torch.zeros(x.t().shape).double().cuda()
 
-            for i in range(len(lambdalist)):  # range(self.n_eigens):
-                v = vlist[i]
-                eig_lambda = lambdalist[i]
-                tmp = torch.mm(torch.mm(x.t(), v), v.t())/torch.sqrt(eig_lambda+self.eps)
+            for i in range(len(lambdalist)):  # range(self.n_eigens)
+                tmp = torch.mm(torch.mm(x.t(), self.eig_dict[str(i)])/(lambdalist[i].sqrt()), self.eig_dict[str(i)].t())
                 xr = xr + tmp
 
             with torch.no_grad():
                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
                 self.running_var = (1 - self.momentum) * self.running_var + self.momentum * sigma
 
-                subspace = torch.zeros(xxt.shape).cuda()
-                for i in range(len(lambdalist)):  # range(self.n_eigens):
-                    v = vlist[i]
-                    eig_lambda = lambdalist[i]
-                    subspace = subspace + torch.mm(v, v.t())/torch.sqrt(eig_lambda+self.eps)
+                subspace = torch.zeros(xxt.shape).double().cuda()
+                # for i in range(self.n_eigens):
+                for i in range(len(lambdalist)):
+                    v = self.eig_dict[str(i)]
+                    subspace = subspace + torch.mm(v, v.t())/(lambdalist[i].sqrt())
+                    # subspace = subspace + torch.mm(v, v.t())
 
                 self.running_subspace = (1 - self.momentum) * self.running_subspace + self.momentum * subspace
 
             xr = xr.t() * self.weight + self.bias
             xr = xr.view(C, N, H, W).transpose(0, 1)
-            return xr
+            return xr.float()
 
         else:
             N, C, H, W = x.size()
+            x = x.double()
             x = x.transpose(0, 1).contiguous().view(C, -1)
             x = (x - self.running_mean) / (self.running_var + self.eps).sqrt()
-            # xxt = torch.mm(x, x.t())
-            # vlist = []
-            # for i in range(self.n_eigens):
-            #     vlist.append(torch.ones(self.num_features, 1).cuda())
-            # for i in range(self.n_eigens):
-            #     v = vlist[i]
-            #     for _ in range(self.n_power_iterations):
-            #         v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-            #     # eig_lambda = torch.mean(torch.matmul(xx, v)/v)
-            #     xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
-            #     # eig_vector = torch.mean(torch.matmul(xx, v) / v)
-            # xr = torch.zeros(x.t().shape).cuda()
-            # for i in range(self.n_eigens):
-            #     v = vlist[i]
-            #     tmp = torch.mm(torch.mm(x.t(), v), v.t())
-            #     xr = xr + tmp
-            #
-            # xr = xr.t() * self.weight + self.bias
-            # xr = xr.view(C, N, H, W).transpose(0, 1)
             x = torch.mm(x.t(), self.running_subspace).t()
             x = x * self.weight + self.bias
             x = x.view(C, N, H, W).transpose(0, 1)
-            return x
+            return x.float()
 
     def extra_repr(self):
         return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
@@ -292,13 +290,17 @@ class myPCANorm(nn.Module):
                              .format(input.dim()))
 
     def create_dictionary(self):
-        self.eig_dict = {}
         for i in range(self.n_eigens):
             self.register_buffer("{}".format(i), th.ones(self.num_features, 1, requires_grad=True).double())
 
+        self.eig_dict = self.state_dict()
+
     def reset_dictionary(self):
         for i in range(self.n_eigens):
-            self.eig_dict[str(i)] = torch.ones(self.num_features, 1, requires_grad=True).double()
+            self.eig_dict[str(i)].data.normal_(0, 1)
+            self.eig_dict[str(i)].data /= torch.norm(self.eig_dict[str(i)].data)
+            self.state_dict()[str(i)].copy_(self.eig_dict[str(i)])
+            # self.eig_dict[str(i)] = torch.ones(self.num_features, 1, requires_grad=True).double()
             # self.eig_dict[str(i)].grad.zero_()
 
     def forward(self, x):
@@ -321,6 +323,8 @@ class myPCANorm(nn.Module):
             lambda_sum = 0
 
             for i in range(self.n_eigens):
+                # print('{}-th eig-vector initial norm & value is {} \n {}'.
+                #       format(i, self.eig_dict[str(i)].norm().item(), self.eig_dict[str(i)].t()))
                 self.eig_dict[str(i)] = self.power_layer(xxt, self.eig_dict[str(i)])
                 eig_lambda = torch.matmul(self.eig_dict[str(i)].t(), torch.matmul(xxt, self.eig_dict[str(i)]))
                 lambdalist.append(eig_lambda)
@@ -392,7 +396,7 @@ class myPCANorm_noRec(nn.Module):
 
         self.weight = Parameter(torch.Tensor(num_features, 1))
         self.bias = Parameter(torch.Tensor(num_features, 1))
-        self.power_layer = power_iteration.apply
+        self.power_layer = power_iteration_once.apply
         self.register_buffer('running_mean', torch.zeros(num_features, 1))
         self.register_buffer('running_var', torch.ones(num_features, 1))
         self.register_buffer('running_subspace', torch.eye(num_features, num_features))
@@ -417,117 +421,3 @@ class myPCANorm_noRec(nn.Module):
 
     def forward(self, x):
         self._check_input_dim(x)
-
-        if self.training:
-
-            N, C, H, W = x.size()
-            x = x.transpose(0, 1).contiguous().view(C, -1)
-            mu = x.mean(1, keepdim=True)
-            sigma = x.var(1, keepdim=True)
-            x = x - mu
-            x = x / (sigma + self.eps).sqrt()
-            xxt = torch.mm(x, x.t())/(x.shape[1]-1) + torch.eye(C).cuda() * self.eps
-            vlist = []
-            # lambdalist = []
-            for i in range(self.n_eigens):
-                vlist.append(torch.ones(self.num_features, 1).cuda())
-
-            print('debugging eigen vector list')
-            for i in range(self.n_eigens):
-                v = vlist[i]
-                print('initial value is ', vlist[i].t())
-                for _ in range(self.n_power_iterations):
-                    v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-                    # v = self.power_layer(xxt, v)
-                # eig_lambda = torch.mean(torch.matmul(xxt, v)/v)
-                # print('{} eig value {}'.format(i, eig_lambda))
-                # sleep(1)
-                # if eig_lambda < 0:
-                #     # print('{} negative eig value is detected'.format(i))
-                #     break
-                # lambdalist.append(eig_lambda)
-                xxt = xxt - torch.mm(torch.mm(xxt, v), v.t())
-                print('candidate value is ', v.t())
-                print('updated value is ', vlist[i].t())
-                print('sleeping for 10 seconds')
-                sleep(10)
-            xr_list = []
-            for i in range(self.n_eigens):  # range(len(lambdalist))
-                v = vlist[i]
-                # eig_lambda = lambdalist[i]
-                # tmp = torch.mm(torch.mm(x.t(), v), v.t())/torch.sqrt(eig_lambda+self.eps)
-                xr_list.append(torch.mm(x.t(), v))
-
-            xr = torch.cat(xr_list, 1)
-            with torch.no_grad():
-                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
-                self.running_var = (1 - self.momentum) * self.running_var + self.momentum * sigma
-
-                subspace = torch.zeros(xxt.shape).cuda()
-                for i in range(self.n_eigens):  # range(len(lambdalist))
-                    v = vlist[i]
-                    # eig_lambda = lambdalist[i]
-                    # subspace = subspace + torch.mm(v, v.t())/torch.sqrt(eig_lambda+self.eps)
-                    subspace = subspace + torch.mm(v, v.t())
-
-                self.running_subspace = (1 - self.momentum) * self.running_subspace + self.momentum * subspace
-
-            xr = xr.t() * self.weight + self.bias
-            xr = xr.view(C, N, H, W).transpose(0, 1)
-            return xr
-
-        else:
-            N, C, H, W = x.size()
-            x = x.transpose(0, 1).contiguous().view(C, -1)
-            x = (x - self.running_mean) / (self.running_var + self.eps).sqrt()
-            # compute eigen-vectors
-            subspace = self.running_subspace.clone()
-            vlist = []
-            for i in range(self.n_eigens):
-                vlist.append(torch.ones(self.num_features, 1).cuda())
-            for i in range(self.n_eigens):
-                v = vlist[i]
-                for _ in range(self.n_power_iterations):
-                    # v = normalize(torch.matmul(xxt, v), dim=0, eps=self.eps)
-                    v = self.power_layer(subspace, v)
-                subspace = subspace - torch.mm(torch.mm(subspace, v), v.t())
-
-            xr = torch.zeros(x.t().shape).cuda()
-            for i in range(self.n_eigens):  # range(len(lambdalist))
-                v = vlist[i]
-                tmp = torch.mm(x.t(), v)
-                xr_slice = xr.narrow(1, i, 1)
-                xr_slice = tmp
-
-            # x = torch.mm(x.t(), self.running_subspace).t()
-            # x = x * self.weight + self.bias
-            # x = x.view(C, N, H, W).transpose(0, 1)
-            xr = xr.t() * self.weight + self.bias
-            xr = xr.view(C, N, H, W).transpose(0, 1)
-            return xr
-
-    def extra_repr(self):
-        return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
-               'track_running_stats={track_running_stats}'.format(**self.__dict__)
-
-    def _load_from_state_dict(self, state_dict, prefix, metadata, strict,
-                              missing_keys, unexpected_keys, error_msgs):
-
-        super(myPCANorm_noRec, self)._load_from_state_dict(
-            state_dict, prefix, metadata, strict,
-            missing_keys, unexpected_keys, error_msgs)
-
-# # self.eig_dict[str(i)].register_hook(print_grad)
-                    # eig_lambda = torch.matmul(self.eig_dict[str(i)].t(), torch.matmul(xxt, self.eig_dict[str(i)]))
-                    # # lambdalist.append(eig_lambda)
-                    # lambda_sum += eig_lambda
-                    # energy_lower_bound = lambda_sum/(lambda_sum + eig_lambda*(C-(i+1)))
-                    # print('{}-Mnorm:{} eig-value {} at least {} energy '.format(i+1, xxt.norm().item(), eig_lambda.item(), energy_lower_bound.item()))
-                    # sleep(0.5)
-                    # xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
-                    # sleep(0.1)
-                    # print('eigen-{}-M-norm: {}'.format(i+1, xxt.norm().item()))
-                    # for i in range(len(lambdalist)):
-                    #     print('{}-th eigenvalue: {}'.format(i+1, lambdalist[i].item()))
-                    # sleep(1000)
-                    #     xxt.register_hook(print_grad)
