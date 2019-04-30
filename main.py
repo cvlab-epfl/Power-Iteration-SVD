@@ -27,7 +27,7 @@ from PCANorm import *
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--norm', default='batchnorm', type=str, help='norm layer type')
-parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+parser.add_argument('--batch_size', default=128, type=int, help='batch size')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
@@ -97,7 +97,7 @@ net = resnet18(Norm=Norm)  # ResNet50(Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18', '{}-bs{}'.format(norm, BatchSize), str(id))
+logdir = os.path.join(save_dir, model_name+'18'+'_adv', '{}-bs{}'.format(norm, BatchSize), str(id))
 
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
