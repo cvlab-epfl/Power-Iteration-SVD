@@ -147,9 +147,9 @@ In the following 2 subsections, we will prove that when the gradient computed fr
 	\begin{aligned} 
 	\frac{\partial L}{\partial \bM}
 	&=\frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}} \bv^{(2)\top} +
-	\frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv_{2}} \bv^{(1)\top} + 
+	\frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{2}} \bv^{(1)\top} + 
 	\frac{\left(\bI-\bv^{(1)} \bv^{(1)\top}\right)}{\left\|\bM \bv^{(0)}\right\|} \frac{\partial L}{\partial \bv^{(1)}} \bv^{(0)\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} + \frac{\partial L}{\partial \bv_{2}} + \frac{\partial L}{\partial \bv^{(1)}} \right)\bv^{\top}\\
+	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} + \frac{\partial L}{\partial \bv^{(2)}} + \frac{\partial L}{\partial \bv^{(1)}} \right)\bv^{\top}\\
 	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
 	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
 	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} 
@@ -311,6 +311,7 @@ In the following 2 subsections, we will prove that when the gradient computed fr
 	{\lambda_{1} - \lambda_{i}}
 	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
 	\end{aligned}
+	\label{eq: final-form}
 	\end{equation}
 	
 	\subsection{Matrix Back-propagation}
@@ -425,7 +426,29 @@ This justifies that we could use power iteration method during backpropogation t
 \label{fig: curve}
 \end{figure}
 
-If $\lambda_i / \lambda_1 {=} 0.9$, then the derivative 
+Fig. \ref{fig: curve} shows how the value of $(\lambda_i/\lambda_1)^k$ evolves with different power iteration number $k$ and ratio~$\lambda_i/\lambda_1$. We need to select appropriate $k$ for different $\lambda_i/\lambda_1$ given $(0 < \lambda_i/\lambda_1 \leq 1)$. 
+
+Let's assume $(\lambda_i/\lambda_1)^k<0.05$ being a good approximation to $(\lambda_i/\lambda_1)^k=0$. Then we have
+\begin{equation}
+(\lambda_i/\lambda_1)^k<0.05 \Leftrightarrow k\; \text{ln}(\lambda_i/\lambda_1) < \text{ln}(0.05) \Leftrightarrow k \geq \frac{\text{ln}(0.05)}{\text{ln}(\lambda_i/\lambda_1)}.
+\end{equation}
+The minimum value of $k$ to satisfy $(\lambda_i/\lambda_1)^k<0.05$ is $k = \lceil \frac{\text{ln}(0.05)}{\text{ln}(\lambda_i/\lambda_1)} \rceil$.
+
+\begin{table}[!htb]
+\begin{center}
+\begin{tabular}{ccccccccccc}
+\hline
+$\lambda_i/\lambda_1$ & 0.2 & 0.4 & 0.6 & 0.8 & \textbf{0.85} & 0.9 & 0.95 & 0.99 & 0.995 & 0.999 \\ \hline
+$k = \lceil \frac{\text{ln}(0.01)}{\text{ln}(\lambda_i/\lambda_1)} \rceil $     & 2   & 4   & 6   & 14  & \textbf{19}   & 29  & 59   & 299  & 598   & 2995  \\ \hline
+\end{tabular}
+\caption{The minimum value of $k$ we need to guarantee $(\lambda_i/\lambda_1)^k<0.05$.}
+\label{tab: kmin}
+\end{center}
+\end{table}
+
+Table \ref{tab: kmin} shows the minimum number of iterations we need to guarantee that the assumption holds. We can observe that when the two eigenvalues are very close to each other \emph{e.g.}, $\lambda_i/\lambda_1=0.999$, we need about 3000 iterations to achieve a good approximation. However, in practice, the case is very rare, and we set power iteration number to be 19. This will satisfy most of the cases. Besides, two very close eigenvalues usually leads to overflow according to Eq.\ref{eq: final-form} as the denominator $\lambda_1 - \lambda_i$ would be close to 0, but with our approximation, this problem could be avoided, and our method is more numerical stable.
+
+
 \medskip
 \small
 \bibliographystyle{unsrt}
