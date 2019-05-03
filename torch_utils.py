@@ -30,7 +30,7 @@ This file contains all the custom pytorch operator.
 
 class power_iteration_once(th.autograd.Function):
     @staticmethod
-    def forward(ctx, M, v_k, num_iter=20):
+    def forward(ctx, M, v_k, num_iter=2):
         '''
         :param ctx: used to save meterials for backward.
         :param M: n by n matrix.
@@ -64,6 +64,9 @@ class power_iteration_once(th.autograd.Function):
             dL_dvk1 = M.mm(mid)
         # print('debug 1 ', dL_dM.t())
         # sleep(1)
+        # if dL_dM.abs().max().item() > 0.005:
+        #     import IPython
+        #     IPython.embed()
         return dL_dM, dL_dvk1
 
 

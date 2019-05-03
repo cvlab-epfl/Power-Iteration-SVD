@@ -1,0 +1,22 @@
+\begin{thebibliography}{1}
+
+\bibitem{nakatsukasa2013stable}
+Yuji Nakatsukasa and Nicholas~J Higham.
+\newblock Stable and efficient spectral divide and conquer algorithms for the
+  symmetric eigenvalue decomposition and the svd.
+\newblock {\em SIAM Journal on Scientific Computing}, 35(3):A1325--A1349, 2013.
+
+\bibitem{ye2017dynamic}
+Mang Ye, Andy~J Ma, Liang Zheng, Jiawei Li, and Pong~C Yuen.
+\newblock Dynamic label graph matching for unsupervised video
+  re-identification.
+\newblock In {\em Proceedings of the IEEE International Conference on Computer
+  Vision}, pages 5142--5150, 2017.
+
+\bibitem{ionescu2015matrix}
+Catalin Ionescu, Orestis Vantzos, and Cristian Sminchisescu.
+\newblock Matrix backpropagation for deep networks with structured layers.
+\newblock In {\em Proceedings of the IEEE International Conference on Computer
+  Vision}, pages 2965--2973, 2015.
+
+\end{thebibliography}

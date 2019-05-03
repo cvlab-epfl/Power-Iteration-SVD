@@ -10,6 +10,25 @@ from torch.nn.functional import normalize
 from torch.nn.utils import spectral_norm
 from torch_utils import *
 
+from tensorboardX import SummaryWriter
+import os
+
+
+n_eigens_debug = 20
+# save_dir = 'runs'
+# logdir = os.path.join(save_dir, 'ResNet18_adv_adapt', '{}-bs{}'.format('pcanorm', 128),
+#                       'pi-eig{}-trail2'.format(n_eigens_debug))
+# writer = SummaryWriter(log_dir=logdir)
+# global step
+# step = 0
+
+
+# def save_grad_(grad):
+#     global step
+#     writer.add_scalar('grad/{}mean'.format('dL_dM_'), grad.abs().mean().item(), step)
+#     writer.add_scalar('grad/{}max'.format('dL_dM_'), grad.abs().max().item(), step)
+#     step += 1
+
 
 class myBatchNorm(nn.Module):
 
@@ -198,7 +217,7 @@ class myZCANorm(nn.Module):
                 lambdalist.append(eig_lambda)
                 lambda_sum += eig_lambda
                 energy_lower_bound = lambda_sum/(lambda_sum + eig_lambda*(C-(i+1)))
-                if energy_lower_bound >= 0.95:
+                if energy_lower_bound >= 0.9:
                     break
                 xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
             xr = torch.zeros(x.t().shape).double().cuda()
@@ -253,7 +272,7 @@ def print_grad(grad):
 
 
 class myPCANorm(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=20, n_eigens=40):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=20, n_eigens=n_eigens_debug):
         super(myPCANorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -317,23 +336,42 @@ class myPCANorm(nn.Module):
 
             x = x - mu
             x = x / (sigma + self.eps).sqrt()
-            xxt = torch.mm(x, x.t())/(x.shape[1]-1) + torch.eye(C).cuda().double() * self.eps
+            xxt = torch.mm(x, x.t())/(N*H*W) + torch.eye(C).cuda().double() * self.eps
 
             lambdalist = []
             lambda_sum = 0
+            lambda_sum_gt = 0
+            with torch.no_grad():
+                # e, v = torch.symeig(xxt, eigenvectors=True)
+                # e = e.flip([0])
+                # v = v.flip([1])
+                u, e, v = torch.svd(xxt)
+                for i in range(self.n_eigens):
+                    self.eig_dict[str(i)] = v[:, i][..., None]
 
             for i in range(self.n_eigens):
                 # print('{}-th eig-vector initial norm & value is {} \n {}'.
                 #       format(i, self.eig_dict[str(i)].norm().item(), self.eig_dict[str(i)].t()))
                 self.eig_dict[str(i)] = self.power_layer(xxt, self.eig_dict[str(i)])
+                # xxt.register_hook(save_grad_)
+
                 eig_lambda = torch.matmul(self.eig_dict[str(i)].t(), torch.matmul(xxt, self.eig_dict[str(i)]))
                 lambdalist.append(eig_lambda)
                 lambda_sum += eig_lambda
                 energy_lower_bound = lambda_sum/(lambda_sum + eig_lambda*(C-(i+1)))
+
+                lambda_sum_gt += e[i]
+                energy_lower_bound_gt = lambda_sum_gt/e.sum()  # (lambda_sum_gt + eig_lambda*(C-(i+1)))
                 # print('{}-Mnorm:{} eig-value {} at least {} energy '.
                 #       format(i+1, xxt.norm().item(), eig_lambda.item(), energy_lower_bound.item()))
                 # sleep(0.5)
-                if energy_lower_bound >= 0.95:
+
+                # if torch.abs(energy_lower_bound - energy_lower_bound_gt) > 0.1:
+                #     import IPython
+                #     IPython.embed()
+
+                # if energy_lower_bound >= 0.95:
+                if energy_lower_bound_gt >= 0.95:
                     break
                 xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
             xr = torch.zeros(x.t().shape).double().cuda()

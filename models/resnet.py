@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 import torch.nn.functional as F
-
+from time import sleep
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d']
@@ -110,6 +110,12 @@ class Bottleneck(nn.Module):
         return out
 
 
+def print_grad_(grad):
+    print('conv layer prior to pca norm layer')
+    print('gradient is ', grad.abs().mean().item())
+    sleep(1)
+
+
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=10, zero_init_residual=False,
@@ -194,6 +200,7 @@ class ResNet(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
+        # x.register_hook(print_grad_)
         x = self.relu(x)
         # x = self.maxpool(x)
 
