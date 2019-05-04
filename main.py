@@ -26,9 +26,9 @@ from random import randint
 from PCANorm import *
 import numpy as np
 
-torch.backends.cudnn.deterministic = True
-torch.manual_seed(999)
-torch.cuda.manual_seed_all(999)
+# torch.backends.cudnn.deterministic = True
+# torch.manual_seed(999)
+# torch.cuda.manual_seed_all(999)
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--norm', default='batchnorm', type=str, help='norm layer type')
@@ -102,7 +102,7 @@ net = resnet18(Norm=Norm)  # ResNet50(Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'_adv_adapt', '{}-bs{}'.format(norm, BatchSize), str(id))
+logdir = os.path.join(save_dir, model_name+'18'+'_1layer', '{}-bs{}'.format(norm, BatchSize), str(id))
 
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
