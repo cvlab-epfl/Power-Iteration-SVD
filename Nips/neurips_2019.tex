@@ -86,19 +86,18 @@
 
 \section{Experiment}
 
-%\begin{table}[!htb]
-%\begin{centering}
-%\begin{tabular}{|c|c|c|c|}
-%\hline
-%Norm Methods          & BN        & PCA       & ZCA       \\ \hline
-%Power Iteration No.   & -         & 20        & 20        \\ \hline
-%Initial Eng-Vector    & -         & Identity  & Identity  \\ \hline
-%Minimum Error         & 5.39      & 4.88      & 5.38      \\ \hline
-%Mean Error (4 trials) & 5.66-0.28 & 5.57-0.46 & 5.52-0.15 \\ \hline
-%\end{tabular}
-%\caption{CIFAR-10 test errors.}
-%\end{centering}
-%\end{table}
+\begin{table}[!htb]
+\begin{centering}
+\begin{tabular}{|c|c|c|c|}
+\hline
+Norm Methods          & BN        & PCA       & ZCA       \\ \hline
+Power Iteration No.   & -         & 19        & 19        \\ \hline
+Minimum Error         & 4.66      & 4.63      & 4.96      \\ \hline
+Mean Error (4 trials) & $4.81 \pm 0.19$ &  $4.73	\pm 0.07$ & $5.09	 \pm 0.12$ \\ \hline
+\end{tabular}
+\caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
+\end{centering}
+\end{table}
 
 \section{PCA Norm Layer}
 Options to implement PCA Norm Layer.
