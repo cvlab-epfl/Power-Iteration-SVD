@@ -35,7 +35,7 @@
 %\newcommand{\be}{\mathbf{e}}
 \newcommand{\bI}{\mathbf{I}}
 
-\title{PCA Normalization}
+\title{PCA Denoising Layer}
 
 % The \author macro works with any number of authors. There are two commands
 % used to separate the names and addresses of multiple authors: \And and \AND.
@@ -84,22 +84,7 @@
 
 \end{abstract}
 
-\section{Experiment}
-
-\begin{table}[!htb]
-\begin{centering}
-\begin{tabular}{|c|c|c|c|}
-\hline
-Norm Methods          & BN        & PCA       & ZCA       \\ \hline
-Power Iteration No.   & -         & 19        & 19        \\ \hline
-Minimum Error         & 4.66      & 4.63      & 4.96      \\ \hline
-Mean Error (4 trials) & $4.81 \pm 0.19$ &  $4.73	\pm 0.07$ & $5.09	 \pm 0.12$ \\ \hline
-\end{tabular}
-\caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
-\end{centering}
-\end{table}
-
-\section{PCA Norm Layer}
+\section{PCA Denoising Layer}
 Options to implement PCA Norm Layer.
 \begin{itemize}
 \item Given input covariance matrix $\bM$, use \textbf{Eigen Decomposition} or \textbf{Singular Value Decomposition (SVD)} Operation as forward computation, and use the analytic solution of its gradient for backward propogation.
@@ -446,6 +431,26 @@ $k = \lceil \frac{\text{ln}(0.01)}{\text{ln}(\lambda_i/\lambda_1)} \rceil $     
 \end{table}
 
 Table \ref{tab: kmin} shows the minimum number of iterations we need to guarantee that the assumption holds. We can observe that when the two eigenvalues are very close to each other \emph{e.g.}, $\lambda_i/\lambda_1=0.999$, we need about 3000 iterations to achieve a good approximation. However, in practice, the case is very rare, and we set power iteration number to be 19. This will satisfy most of the cases. Besides, two very close eigenvalues usually leads to overflow according to Eq.\ref{eq: final-form} as the denominator $\lambda_1 - \lambda_i$ would be close to 0, but with our approximation, this problem could be avoided, and our method is more numerical stable.
+
+\section{Experiment}
+
+In the experiment, within the PCA denoising layer, we remove the noise in the feature maps by only selecting its top-$k$ eigenvectors to reconstruct the input feature maps.
+We first reshape the input feature maps $X_{n {\times} c {\times} h {\times} w}$ to $X_{c {\times} nhw}$, and compute the covariance matrix $Var(X) =\frac{XX^{\top}}{nhw-1}$.
+The constraint for $k$ is that $\frac{\sum_{i=1}^k\lambda_i}{\sum_{i=1}^n\lambda_i} \geq 0.95$, which means that $95\%$ of the information is preserved and the rest of the information which is lower than $5\%$ is removed. 
+In practice, $k$ is relatively small compared with channel number $c$. For instance, in the first convolutional layer in ResNet18 which has the channel 64, we observe that $95\%$ of the information could be preserved when $k=8, \text{or} \; 9$.
+
+\begin{table}[!htb]
+\begin{centering}
+\begin{tabular}{|c|c|c|c|}
+\hline
+Norm Methods          & BN        & PCA       & ZCA       \\ \hline
+Power Iteration No.   & -         & 19        & 19        \\ \hline
+Minimum Error         & 4.66      & 4.63      & 4.96      \\ \hline
+Mean Error (4 trials) & $4.81 \pm 0.19$ &  $4.73	\pm 0.07$ & $5.09	 \pm 0.12$ \\ \hline
+\end{tabular}
+\caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
+\end{centering}
+\end{table}
 
 
 \medskip

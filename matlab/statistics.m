@@ -16,4 +16,8 @@ clc
 bn = [4.66, 5.05, 4.66, 4.85];
 bn_sts = [mean(bn), std(bn)];
 
-pca = [4.66, ];
+pca = [4.63, 4.75, 4.74, 4.78];
+pca_sts = [mean(pca), std(pca)];
+
+zca = [5.22, 5.04, 5.15, 4.96];
+zca_sts = [mean(zca), std(zca)];

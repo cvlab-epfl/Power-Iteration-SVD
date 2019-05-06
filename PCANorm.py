@@ -140,14 +140,14 @@ class myGroupNorm(nn.Module):
 
 
 class myZCANorm(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=19, n_eigens=64):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=19):
         super(myZCANorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
         self.n_power_iterations = n_power_iterations
-        self.n_eigens = n_eigens
+        self.n_eigens = int(num_features/4)
 
         self.weight = Parameter(torch.Tensor(num_features, 1).double())
         self.bias = Parameter(torch.Tensor(num_features, 1).double())
@@ -290,14 +290,14 @@ def print_grad(grad):
 
 
 class myPCANorm(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=19, n_eigens=20):
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=19):
         super(myPCANorm, self).__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
         self.n_power_iterations = n_power_iterations
-        self.n_eigens = n_eigens
+        self.n_eigens = int(num_features/4)
 
         self.weight = Parameter(torch.Tensor(num_features, 1).double())
         self.bias = Parameter(torch.Tensor(num_features, 1).double())

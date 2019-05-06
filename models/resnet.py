@@ -146,6 +146,7 @@ class ResNet(nn.Module):
         self.bn1 = norm_layer(self.inplanes, affine=True)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        # self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2,
                                        dilate=replace_stride_with_dilation[0])
@@ -173,8 +174,12 @@ class ResNet(nn.Module):
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
-        norm_layer = self._norm_layer
+    def _make_layer(self, block, planes, blocks, stride=1, dilate=False, Norm=None):
+        if Norm is None:
+            norm_layer = self._norm_layer
+        else:
+            norm_layer = Norm
+        # norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
         if dilate:
