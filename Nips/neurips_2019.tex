@@ -441,12 +441,14 @@ In practice, $k$ is relatively small compared with channel number $c$. For insta
 
 \begin{table}[!htb]
 \begin{centering}
-\begin{tabular}{|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|c|}
 \hline
-Norm Methods          & BN        & PCA       & ZCA       \\ \hline
-Power Iteration No.   & -         & 19        & 19        \\ \hline
-Minimum Error         & 4.66      & 4.63      & 4.96      \\ \hline
-Mean Error (4 trials) & $4.81 \pm 0.19$ &  $4.73	\pm 0.07$ & $5.09	 \pm 0.12$ \\ \hline
+Floating-point Data Type & Single Precision & \multicolumn{2}{c|}{Double Precision} & \multicolumn{2}{c|}{Single Precision} \\ \hline
+Norm Methods          & BN        & PCA       & ZCA     & PCA       & ZCA  \\ \hline
+Power Iteration No.   & -         & 19        & 19      &  19  &   19 \\ \hline
+Minimum Error         & 4.66      & 4.63      & 4.96   &    &   \\ \hline
+Mean Error (4 trials) & $4.81 \pm 0.19$ &  $4.73	\pm 0.07$ & $5.09	 \pm 0.12$   &    & \\ \hline
+Speed (ms per minibatch) &                  &                   &                   &                   &                   \\ \hline
 \end{tabular}
 \caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
 \end{centering}

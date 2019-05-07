@@ -82,8 +82,12 @@ elif norm == 'layernorm':
     Norm = nn.LayerNorm
 elif norm == 'zcanorm':
     Norm = myZCANorm
+elif norm == 'zcanormfloat':
+    Norm = myZCANormfloat
 elif norm == 'pcanorm':
     Norm = myPCANorm
+elif norm == 'pcanormfloat':
+    Norm = myPCANormfloat
 elif norm == 'pcanorm-norec':
     Norm = myPCANorm_noRec
 # net = VGG('VGG19')
@@ -102,7 +106,7 @@ net = resnet18(Norm=Norm)  # ResNet50(Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'_1layer', '{}-bs{}'.format(norm, BatchSize), str(id))
+logdir = os.path.join(save_dir, model_name+'18'+'_1block', '{}-bs{}'.format(norm, BatchSize), str(id))
 
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
@@ -141,7 +145,7 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
-    loss_tm1 = 0
+    # loss_tm1 = 0
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
 
@@ -191,7 +195,13 @@ def train(epoch):
         #         sleep(1)
         # print('backwarding..')
         loss.backward()
-        loss_diff = np.abs(loss_tm1 - loss.item())
+        # loss_diff = np.abs(loss_tm1 - loss.item())
+
+        # d = dict(net.named_buffers())
+        # for key, value in d.items():
+        #     print(key, value.shape)
+        # for n, p in net.named_parameters():
+        #     print('name: {}'.format(n))
 
         # writer.add_scalar('grad/loss', loss.item(), epoch * len(trainloader) + batch_idx + 1)
         # for n, p in net.named_parameters():
@@ -199,7 +209,7 @@ def train(epoch):
         #         writer.add_scalar('grad/{}mean'.format(n), p.grad.abs().mean().item(), epoch * len(trainloader) + batch_idx + 1)
         #         writer.add_scalar('grad/{}max'.format(n), p.grad.abs().max().item(), epoch * len(trainloader) + batch_idx + 1)
 
-        loss_tm1 = loss.item()
+        # loss_tm1 = loss.item()
         # for n, p in net.named_parameters():
         #     if p.requires_grad:
         #         if (p.grad != p.grad).any():
