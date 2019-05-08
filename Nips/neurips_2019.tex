@@ -106,9 +106,14 @@ In \textbf{sections} \ref{sec: pi} \& \ref{sec: mbp}, we will prove that when th
 
 \section{Approximate SVD gradient with Power Iteration in backpropogation}
 In the following 2 subsections, we will prove that when the gradient computed from Power Iteration equals to the gradients computed from SVD.
-	\subsection{Power Iteration}
+	\subsection{Gradient of Power Iteration}
 	\label{sec: pi}
-	The following gradient formula for power iteration methods is from~\cite{ye2017dynamic}.
+	To compute the leading eigenvector $\bv$ of $\bM$, Power Iteration uses the following standard formula,
+	\begin{equation}
+	\bv^{(k)} = \frac{\bM\bv^{(k-1)}}{\| \bM\bv^{(k-1)} \|},
+	\end{equation}
+	in which $\| {\cdot} \|$ denotes the $l_2$ norm, and $v^{(0)}$ is usually initialized randomly with  $\|v^{(0)}\|{=}1$.
+    Its gradient formula is as follows~\cite{ye2017dynamic},
 	\begin{equation}
 	\begin{aligned} 
 	\frac{\partial L}{\partial \bM} &=\sum_{k} \frac{\left(\bI-\bv^{(k+1)} \bv^{(k+1)\top}\right)}{\left\|\bM \bv^{(k)}\right\|} \frac{\partial L}{\partial \bv^{(k+1)}} \bv^{(k)\top} \\
@@ -119,120 +124,109 @@ In the following 2 subsections, we will prove that when the gradient computed fr
 	\begin{equation}
 	\begin{aligned} 
 	\frac{\partial L}{\partial \bv^{(2)}} &=\bM \frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}}\\
-	\frac{\partial L}{\partial \bv^{(1)}} &=\bM \frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{(2)}}\\
-	&=\bM \frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} 
+	\frac{\partial L}{\partial \bv^{(1)}} &=\bM \frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{(2)}}
+	=\bM \frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} 
 	\bM \frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}}
 	\end{aligned}
 	\end{equation}
 	
-	Then the $\frac{\partial L}{\partial \bM}$ should be like the following, for the reason that we use eigenvalue decomposition (ED)'s result as initial value, then $\bv^{(0)}\approx\bv^{(1)}\approx\bv^{(2)}$. We use $\bv$ to represent it, M is symmetric.
+	Then the $\frac{\partial L}{\partial \bM}$ should be like the following, for the reason that we use eigenvalue decomposition (ED)'s result, denoted as $\bv$ as initial value, then $\bv {=} \bv^{(0)} {\approx}\bv^{(1)} {\approx} \bv^{(2)}{\approx} \cdots {\approx}\bv^{(k)}$. 
 	
 	\begin{equation}
 	\begin{aligned} 
 	\frac{\partial L}{\partial \bM}
-	&=\frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}} \bv^{(2)\top} +
-	\frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{2}} \bv^{(1)\top} + 
+	&{=}\frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}} \bv^{(2)\top} +
+	\frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{(2)}} \bv^{(1)\top} + 
 	\frac{\left(\bI-\bv^{(1)} \bv^{(1)\top}\right)}{\left\|\bM \bv^{(0)}\right\|} \frac{\partial L}{\partial \bv^{(1)}} \bv^{(0)\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} + \frac{\partial L}{\partial \bv^{(2)}} + \frac{\partial L}{\partial \bv^{(1)}} \right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} 
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} 
-	\frac{\left(\bM - \bM\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\bM \frac{\left(\bM - \bv\bv^{\top}\bM - \bM\bv\bv^{\top} + \bv\bv^{\top}\bM\bv\bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\bM \frac{\left(\bM - \bv\bv^{\top}\bM - \cancel{\lambda\bv\bv^{\top}} + \cancel{\lambda\bv\bv^{\top}\bv\bv^{\top}}\right)}{\left\|\bM \bv\right\|^{2}} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\bM \frac{\left(\bM - \bv\bv^{\top}\bM\right)}{\left\|\bM \bv\right\|^{2}} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\bM \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	 \frac{\left(\bM\bM - \bM\bM\bv\bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\frac{\left(\bM-\lambda \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\frac{\left(\bM\bM - \lambda^{2}\bv\bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
-	&=\frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}\left(\frac{\partial L}{\partial \bv^{(3)}} +
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}\bv_{i}\bv_{i}^{\top}\right)}{ \lambda_{1}} \frac{\partial L}{\partial \bv^{(3)}} + 
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{2}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{2}} \frac{\partial L}{\partial \bv^{(3)}}
-	\right)\bv^{\top}\\
+	&{=} \left( \frac{\left(\bI {-} \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} {+}
+	 \frac{\left(\bI {-} \bv \bv^{\top}\right) \bM  \left(\bI {-} \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}}  {+} 
+	 \frac{\left(\bI {-} \bv \bv^{\top}\right) \bM \left(\bI {-} \bv \bv^{\top}\right) \bM \left(\bI {-} \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{3}} \right)
+	 \frac{\partial L}{\partial \bv^{(3)}} \bv^{\top}
 	\end{aligned}
+	\label{eq: pi_expand}
 	\end{equation}
 	
+	Known that $\bv \bv^{\top}$ and $\bM$ are symmetric and $\bM \bv = \lambda \bv$, we have 
+$$\bv\bv^{\top}\bM = (\bM^{\top}\bv\bv^{\top})^{\top} = (\bM\bv\bv^{\top})^{\top} = (\lambda\bv\bv^{\top})^{\top} = \lambda\bv\bv^{\top} = \bM\bv\bv^{\top}.$$
+	Introducing the equation above into the numerator in the second term of Eq.\ref{eq: pi_expand}, we can obtain:
 	\begin{equation}
 	\begin{aligned}
-	\bv\bv^{\top}\bM = (\bM^{\top}\bv\bv^{\top})^{\top} = (\bM\bv\bv^{\top})^{\top} = (\lambda\bv\bv^{\top})^{\top} = \lambda\bv\bv^{\top} = \bM\bv\bv^{\top}
+	\left(\bI - \bv \bv^{\top}\right) \bM  \left(\bI - \bv \bv^{\top}\right) &
+	= \left(\bM - \bv \bv^{\top}\bM\right) \left(\bI - \bv \bv^{\top}\right) 
+	=  \left(\bM - \bM \bv \bv^{\top}\right) \left(\bI - \bv \bv^{\top}\right) \\
+	= \bM \left(\bI - \bv \bv^{\top}\right) \left(\bI - \bv \bv^{\top}\right) &
+	= \bM \left(\bI - 2\bv \bv^{\top} + \bv \cancel{\left(\bv^{\top}\bv \right)} \bv^{\top}\right) 
+	= \bM \left(\bI - \bv \bv^{\top} \right).
 	\end{aligned}
+	\label{eq: term1}
+	\end{equation}
+	Similarly, for the numerator in the third term in Eq.\ref{eq: pi_expand}, we have:
+	\begin{equation}
+	\left(\bI - \bv \bv^{\top}\right) \bM \left(\bI - \bv \bv^{\top}\right) \bM \left(\bI - \bv \bv^{\top}\right) = \bM \bM \left(\bI - \bv \bv^{\top} \right).
+	\label{eq: term2}
 	\end{equation}
 	
+Introducing Eq.\ref{eq: term1} and Eq.\ref{eq: term2} into Eq.\ref{eq: pi_expand}, we can obtain	
 	\begin{equation}
-	\begin{aligned}
-	\left\|\bM\bv\right\|^{2} &= \lambda^{2}\\
-	\left\|\bM\bv\right\| &= \lambda
-	\end{aligned}
-	\end{equation}
-	
-	\begin{equation}
-	\begin{aligned}
-	\bM &= \lambda_{1}\bv_{1}\bv_{1}^{\top} + \lambda_{2}\bv_{2}\bv_{2}^{\top} + \lambda_{3}\bv_{3}\bv_{3}^{\top} + \cdots\\
-	\bM\bM &=  (\lambda_{1}\bv_{1}\bv_{1}^{\top} + \lambda_{2}\bv_{2}\bv_{2}^{\top} + \cdots) *  (\lambda_{1}\bv_{1}\bv_{1}^{\top} + \lambda_{2}\bv_{2}\bv_{2}^{\top} + \cdots)\\
-	\bM\bM &= \lambda_{1}^{2}\bv_{1}\bv_{1}^{\top}\bv_{1}\bv_{1}^{\top} +  \lambda_{2}^{2}\bv_{2}\bv_{2}^{\top}\bv_{2}\bv_{2}^{\top} + \cdots\\
-	 &\cancel{\lambda_{1}\lambda_{2}\bv_{1}\bv_{1}^{\top}\bv_{2}\bv_{2}^{\top}} + \cancel{\lambda_{1}\lambda_{2}\bv_{2}\bv_{2}^{\top}\bv_{1}\bv_{1}^{\top}} + \cdots\\
-	\bM\bM &= \lambda_{1}^{2}\bv_{1}\bv_{1}^{\top} +  \lambda_{2}^{2}\bv_{2}\bv_{2}^{\top} + \cdots\\
-	\end{aligned}
-	\end{equation}
-	
-	If using k iterations instead of three iterations, then it would be:
-	\begin{equation}
-	\begin{aligned}
 	\frac{\partial L}{\partial \bM}
-	&= \frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\left\|\bM \bv_{1}\right\|}
-	\left(\bI +
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}\bv_{i}\bv_{i}^{\top}\right)}{ \lambda_{1}}  + 
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{2}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{2}} + \cdots +
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{k-1}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{k-1}}  
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\left(\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} +
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}\bv_{i}\bv_{i}^{\top}\right)}{ \lambda_{1}^{2}}  + 
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{2}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{3}} + \cdots +
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{k-1}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{k}}  
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-	\left(
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}\bv_{i}\bv_{i}^{\top}\right)}{ \lambda_{1}^{2}}  + 
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{2}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{3}} + \cdots +
-	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{k-1}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{k}}  
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-	\left(\sum_{i=2}^{n}\left(\frac{\lambda_{i}}{\lambda_{1}^{2}} + 
-	\frac{\lambda_{i}^{2}}{\lambda_{1}^{3}} + \cdots + \frac{\lambda_{i}^{k-1}}{\lambda_{1}^{k}}
-	\right)\bv_{i}\bv_{i}^{\top}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-%	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-%	\left(\sum_{i=2}^{n}\left(\frac{\lambda_{i}}{\lambda_{1}^{2}} + 
-%	\frac{\lambda_{i}}{\lambda_{1}^{2}}\left(\frac{\lambda_{i}}{\lambda_{1}}\right)^{1} + \cdots +
-%	\frac{\lambda_{i}}{\lambda_{1}^{2}}\left(\frac{\lambda_{i}}{\lambda_{1}}\right)^{k-2}
-%	\right)\bv_{i}\bv_{i}^{\top}
-%	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-	\left(\sum_{i=2}^{n}\left(
+	 = \left( \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} +
+	 \frac{\bM \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}}  + 
+	 \frac{\bM \bM \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{3}} \right)
+	 \frac{\partial L}{\partial \bv^{(3)}} \bv^{\top}
+	\label{eq: pi_3iter}
+	\end{equation}
+
+Extending the iteration number from 3 to $k$, Eq.\ref{eq: pi_expand} will be extended as
+	\begin{equation}
+	\frac{\partial L}{\partial \bM}
+	 = \left( \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}  +
+	 \frac{\bM \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}}  + \cdots +
+	 \frac{\bM^{k-1} \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{k}} \right) \frac{\partial L}{\partial \bv^{(k)}}
+	\bv^{\top}
+	\label{eq: pi_pytorch}
+	\end{equation}	
+
+Eq.\ref{eq: pi_pytorch} is the form we adopt to compute the gradients of SVD, and we set $k{=}19$.
+
+\subsection{Proof of Gradient Equivalence Between Power Iteration and SVD}
+In this subsection, we are going to prove that the gradients of SVD and Power Iteration are equivalent. In the end of this section, we can observe that when the number of the iterations goes to infinity, the gradients of Power Iteration can be written as the same form as the one of SVD.
+
+	\begin{equation}
+	\begin{aligned}
+	\left\|\bM\bv\right\| & = \lambda, \; 
+		\left\|\bM\bv\right\|^{2} {=} \lambda^{2}, \cdots, \; 
+		\left\|\bM\bv\right\|^{k} {=} \lambda^{k} \\
+	\bM &= \lambda_{1}\bv_{1}\bv_{1}^{\top} + \lambda_{2}\bv_{2}\bv_{2}^{\top} + \cdots +  \lambda_{n}\bv_{n}\bv_{n}^{\top}\\
+	\bM^{2} &=  (\lambda_{1}\bv_{1}\bv_{1}^{\top} + \lambda_{2}\bv_{2}\bv_{2}^{\top} + \cdots)   (\lambda_{1}\bv_{1}\bv_{1}^{\top} + \lambda_{2}\bv_{2}\bv_{2}^{\top} + \cdots)\\
+	 &= \lambda_{1}^{2}\bv_{1}\bv_{1}^{\top}\bv_{1}\bv_{1}^{\top} +  \lambda_{2}^{2}\bv_{2}\bv_{2}^{\top}\bv_{2}\bv_{2}^{\top} + \cdots
+	\cancel{\lambda_{1}\lambda_{2}\bv_{1}\bv_{1}^{\top}\bv_{2}\bv_{2}^{\top}} + \cancel{\lambda_{1}\lambda_{2}\bv_{2}\bv_{2}^{\top}\bv_{1}\bv_{1}^{\top}} + \cdots\\
+	 &= \lambda_{1}^{2}\bv_{1}\bv_{1}^{\top} +  \lambda_{2}^{2}\bv_{2}\bv_{2}^{\top} + \cdots + \lambda_{n}^{2}\bv_{n}\bv_{n}^{\top}, \\ 
+	 \bM^{k} &= \lambda_{1}^{k}\bv_{1}\bv_{1}^{\top} +  \lambda_{2}^{k}\bv_{2}\bv_{2}^{\top} + \cdots + \lambda_{n}^{k}\bv_{n}\bv_{n}^{\top},\\
+	\end{aligned}
+	\label{eq: term_k}
+	\end{equation}
+	in which $\bv = \bv_1$ is the leading eigenvector and $\lambda=\lambda_1$ is the leading eigenvalue.
+	By introducing Eq.\ref{eq: term_k} into Eq.\ref{eq: final-form}, the derivative can be further formulated as
+	
+	\begin{equation}
+	\begin{aligned} 
+	\frac{\partial L}{\partial \bM}
+	& =\left( \frac{\left(\bI-\bv_1 \bv_1^{\top}\right)}{\left\|\bM \bv_1\right\|}  +
+	 \frac{\bM \left(\bI-\bv_1 \bv_1^{\top}\right)}{\left\|\bM \bv_1\right\|^{2}}  + \cdots +
+	 \frac{\bM^{k-1} \left(\bI-\bv_1 \bv_1^{\top}\right)}{\left\|\bM \bv_1\right\|^{k}} \right)
+	 \frac{\partial L}{\partial \bv_1^{(k)}}\bv_1^{\top} \\
+	&=\left( \frac{\left(\bI-\bv_1 \bv_1^{\top}\right)}{\left\|\bM \bv_1\right\|} +
+	\frac{\left(\bM-\lambda \bv_1 \bv_1^{\top}\right)}{\left\|\bM \bv_1\right\|^2}  + \cdots +
+	\frac{\left(\bM^{k-1} - \lambda^{k-1}\bv_1\bv_1^{\top}\right)}{\left\|\bM \bv\right\|^{k}} \right) \frac{\partial L}{\partial \bv_1^{(k)}} \bv_1^{\top}\\
+	&=\left( \frac{\left(\sum_{i=2}^{n}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_1}      +
+	\frac{\left(\sum_{i=2}^{n}\lambda_{i}\bv_{i}\bv_{i}^{\top}\right)}{ \lambda_{1}^{2}} +  \cdots +
+	\frac{\left(\sum_{i=2}^{n}\lambda_{i}^{k-1}\bv_{i}\bv_{i}^{\top}\right)}{\lambda_{1}^{k}} \right) \frac{\partial L}{\partial \bv_1^{(k)}}
+	\bv^{\top}\\
+	&=\left(\sum_{i=2}^{n}\left(
 	\frac{1}{\lambda_{1}} +
 	\frac{1}{\lambda_{1}}\left(\frac{\lambda_{i}}{\lambda_{1}}\right)^{1} +
 	\frac{1}{\lambda_{1}}\left(\frac{\lambda_{i}}{\lambda_{1}}\right)^{2} + \cdots +
 	\frac{1}{\lambda_{1}}\left(\frac{\lambda_{i}}{\lambda_{1}}\right)^{k-1}
-	- \frac{1}{\lambda_{1}}
 	\right)\bv_{i}\bv_{i}^{\top}
 	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
 	\end{aligned}
@@ -253,48 +247,17 @@ In the following 2 subsections, we will prove that when the gradient computed fr
 	
 	Introducing Eq.\ref{eq: geo-prog-series-deduction} to Eq.\ref{eq: geo-prog-series}, we can obtain	
 	\begin{equation}
-	\begin{aligned}
 	\frac{\partial L}{\partial \bM}
-	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-	\left(\sum_{i=2}^{n}\left(
+	=\left(\sum_{i=2}^{n}\left(
 	\frac{\frac{1}{\lambda_{1}}}
 	{1 - \frac{\lambda_{i}}{\lambda_{1}}}
-	- \frac{1}{\lambda_{1}}
 	\right)
 	\bv_{i}\bv_{i}^{\top}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-	\left(\sum_{i=2}^{n}\left(
-	\frac{1}
-	{\lambda_{1} - \lambda_{i}}
-	- \frac{1}{\lambda_{1}}
-	\right)
-	\bv_{i}\bv_{i}^{\top}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\frac{\left(\bI-\bv_{1} \bv_{1}^{\top}\right)}{\lambda_{1}} \frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} +
-	\left(\sum_{i=2}^{n}
+	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}
+	=\left(\sum_{i=2}^{n}
 	\frac{\bv_{i}\bv_{i}^{\top}}
 	{\lambda_{1} - \lambda_{i}}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} -
-	\left(\sum_{i=2}^{n}
-	\frac{\bv_{i}\bv_{i}^{\top}}
-	{\lambda_{1}}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	&=\cancel{\frac{\bI}{\lambda_{1}}\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}} +
-	\left(\sum_{i=2}^{n}
-	\frac{\bv_{i}\bv_{i}^{\top}}
-	{\lambda_{1} - \lambda_{i}}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top} -
-	\cancel{
-	\left(\sum_{i=1}^{n}
-	\frac{\bv_{i}\bv_{i}^{\top}}
-	{\lambda_{1}}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}}\\
-	&=\left(\sum_{i=2}^{n}
-	\frac{\bv_{i}\bv_{i}^{\top}}
-	{\lambda_{1} - \lambda_{i}}
-	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}\\
-	\end{aligned}
+	\right)\frac{\partial L}{\partial \bv_{1}^{(k)}}\bv_{1}^{\top}
 	\label{eq: final-form}
 	\end{equation}
 	
@@ -404,9 +367,9 @@ This justifies that we could use power iteration method during backpropogation t
 
 \begin{figure}[!htb]
 \begin{center}
-\includegraphics[width=0.7\linewidth]{curve.pdf}
+\includegraphics[width=\linewidth]{ratio-k.pdf}
 \end{center}
-\caption{Eigenvalue Ratio VS Number of Iterations.}
+\caption{(a) shows how the value of $(\lambda_k/\lambda_1)^k$ changes \emph{w.r.t.} the eigenvalue ratio $\lambda_k/\lambda_1$ and iteration number $k$. (b) shows the contour of curved surface in (a).}
 \label{fig: curve}
 \end{figure}
 
@@ -441,14 +404,27 @@ In practice, $k$ is relatively small compared with channel number $c$. For insta
 
 \begin{table}[!htb]
 \begin{centering}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+Norm Methods          & BN        & PCA(PI)  & PCA(SVD) & PCA(SVD+PI) \\ \hline
+Minimum Error         & 4.66       & 5.05   & NaN   &\textbf{4.58}\\ \hline
+Mean Error (4) & $4.81{\pm}0.19$ &$5.35{\pm}0.25$ & NaN &$\mathbf{4.67{\pm}0.06}$ \\ \hline
+\end{tabular}
+\caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
+\end{centering}
+\end{table}
+
+\begin{figure}
+\includegraphics[width=0.5\linewidth]{convergence.pdf}
+\end{figure}
+
+\begin{table}[!htb]
+\begin{centering}
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
-Floating-point Data Type & Single Precision & \multicolumn{2}{c|}{Double Precision} & \multicolumn{2}{c|}{Single Precision} \\ \hline
-Norm Methods          & BN        & PCA       & ZCA     & PCA       & ZCA  \\ \hline
-Power Iteration No.   & -         & 19        & 19      &  19  &   19 \\ \hline
-Minimum Error         & 4.66      & 4.63      & 4.96   &    &   \\ \hline
-Mean Error (4 trials) & $4.81 \pm 0.19$ &  $4.73	\pm 0.07$ & $5.09	 \pm 0.12$   &    & \\ \hline
-Speed (ms per minibatch) &                  &                   &                   &                   &                   \\ \hline
+Norm Methods          & BN        & PCA(1 layer)   & ZCA(1 layer)  & PCA(1 block)   & ZCA(1 block) \\ \hline
+Minimum Error         & 4.66      &  4.58  &   4.91 &  5.14 &  \\ \hline
+Mean Error (4) & $4.81{\pm}0.19$  &  $4.67{\pm}0.06$  & $5.02{\pm}0.28$ & $5.30{\pm}0.12$ &  \\ \hline
 \end{tabular}
 \caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
 \end{centering}
