@@ -218,8 +218,8 @@ class ZCANormPI(nn.Module):
                 xgr_list.append(xgr)
 
                 with torch.no_grad():
-                    subspace = self.__getattr__('running_subspace' + str(i))
-                    subspace.data = (1 - self.momentum) * subspace.data + self.momentum * subspace.data
+                    running_subspace = self.__getattr__('running_subspace' + str(i))
+                    running_subspace.data = (1 - self.momentum) * running_subspace.data + self.momentum * subspace.data
 
             with torch.no_grad():
                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
