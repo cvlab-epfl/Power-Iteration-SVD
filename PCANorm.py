@@ -148,7 +148,7 @@ class myZCANorm(nn.Module):
         self.momentum = momentum
         self.affine = affine
         self.n_power_iterations = n_power_iterations
-        self.n_eigens = int(num_features/4)
+        self.n_eigens = int(num_features/2)
 
         self.weight = Parameter(torch.Tensor(num_features, 1).double())
         self.bias = Parameter(torch.Tensor(num_features, 1).double())
@@ -554,14 +554,14 @@ class myPCANorm(nn.Module):
 
 
 class myPCANormfloat(nn.Module):
-    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True, n_power_iterations=19):
+    def __init__(self, num_features, eps=1e-4, momentum=0.1, affine=True, n_power_iterations=19):
         super(myPCANormfloat, self).__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
         self.n_power_iterations = n_power_iterations
-        self.n_eigens = int(num_features/4)
+        self.n_eigens = num_features  # int(num_features/2)
 
         self.weight = Parameter(torch.Tensor(num_features, 1))
         self.bias = Parameter(torch.Tensor(num_features, 1))
@@ -608,6 +608,7 @@ class myPCANormfloat(nn.Module):
 
             x = x - mu
             x = x / (sigma + self.eps).sqrt()
+            # xxt = torch.mm(x, x.t())/(N*H*W) + torch.eye(C, out=torch.empty_like(x)) * self.eps
             xxt = torch.mm(x, x.t())/(N*H*W) + torch.eye(C, out=torch.empty_like(x)) * self.eps
 
             counter = 0
@@ -618,11 +619,15 @@ class myPCANormfloat(nn.Module):
                     self.eig_dict[str(i)] = v[:, i][..., None]
 
             for i in range(self.n_eigens):
+                if e[i].item() < self.eps:
+                    print('eigenvalue smaller than threshold {}..'.format(self.eps))
+                    break
                 self.eig_dict[str(i)] = self.power_layer(xxt, self.eig_dict[str(i)])
                 counter += 1
                 lambda_sum_gt += e[i]
                 energy_lower_bound_gt = lambda_sum_gt/e.sum()
                 if energy_lower_bound_gt >= 0.95:
+                    # print('{}/{} eigen-vectors selected'.format(i+1, self.num_features))
                     break
                 xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
 
@@ -636,7 +641,6 @@ class myPCANormfloat(nn.Module):
                 subspace = torch.zeros_like(xxt)
                 for i in range(counter):
                     subspace = subspace + torch.mm(self.eig_dict[str(i)], self.eig_dict[str(i)].t())
-
                 self.running_subspace = (1 - self.momentum) * self.running_subspace + self.momentum * subspace
 
             xr = xr.t() * self.weight + self.bias

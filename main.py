@@ -24,6 +24,7 @@ from utils import progress_bar
 from tensorboardX import SummaryWriter
 from random import randint
 from PCANorm import *
+from ZCANorm import *
 import numpy as np
 
 # torch.backends.cudnn.deterministic = True
@@ -84,6 +85,10 @@ elif norm == 'zcanorm':
     Norm = myZCANorm
 elif norm == 'zcanormfloat':
     Norm = myZCANormfloat
+elif norm == 'zcanormorg':
+    Norm = ZCANormOrg
+elif norm == 'zcanormpi':
+    Norm = ZCANormPI
 elif norm == 'pcanorm':
     Norm = myPCANorm
 elif norm == 'pcanormfloat':
@@ -91,7 +96,7 @@ elif norm == 'pcanormfloat':
 elif norm == 'pcanorm-norec':
     Norm = myPCANorm_noRec
 # net = VGG('VGG19')
-net = resnet18(Norm=Norm)  # ResNet50(Norm)
+net = resnet18(Norm=Norm)  # resnet18(Norm=Norm)
 # net = PreActResNet18()
 # net = GoogLeNet()
 # net = DenseNet121()
@@ -106,7 +111,7 @@ net = resnet18(Norm=Norm)  # ResNet50(Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'_1block', '{}-bs{}'.format(norm, BatchSize), str(id))
+logdir = os.path.join(save_dir, model_name+'18'+'_zcapi16group100pct19pi', '{}-bs{}'.format(norm, BatchSize), str(id))  # _bn _1layer95pct29pi
 
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
@@ -123,10 +128,18 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir(logdir), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('best-{}-ckpt.t7'.format(model_name))
+    checkpoint = torch.load('{}/best-{}-ckpt.t7'.format(logdir, model_name))
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
+    if start_epoch<100:
+        args.lr = 0.1
+    elif start_epoch <200:
+        args.lr = 0.01
+    elif start_epoch <300:
+        args.lr = 0.001
+    else:
+        args.lr = 0.0001
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
@@ -161,7 +174,8 @@ def train(epoch):
         # inputs = torch.load('input-31-1188.pt')
         # targets = torch.load('target-31-1188.pt')
         # start_time = time.time()
-        outputs = net(inputs)
+
+        # outputs = net(inputs)
 
         # elapsed_time = time.time() - start_time
         # print('forward consumes time: {}'.format(elapsed_time))
@@ -169,7 +183,23 @@ def train(epoch):
         # dot = make_dot(outputs, params=dict(net.named_parameters()))
         # dot.render(str(batch_idx))
 
+        # loss = criterion(outputs, targets)
+
+        outputs = net(inputs)
         loss = criterion(outputs, targets)
+        loss.backward()
+
+        # try:
+        #     outputs = net(inputs)
+        #     loss = criterion(outputs, targets)
+        #     loss.backward()
+        # except:
+        #     print("hi")
+        #     # if hasattr(torch.cuda, 'empty_cache'):
+        #     #     loss = None
+        #     #     torch.cuda.empty_cache()
+        #     continue
+
         # print('loss {}'.format(loss))
 
         # if math.isnan(loss):
@@ -194,14 +224,16 @@ def train(epoch):
         #     while True:
         #         sleep(1)
         # print('backwarding..')
-        loss.backward()
+
+        # loss.backward()
+
         # loss_diff = np.abs(loss_tm1 - loss.item())
 
         # d = dict(net.named_buffers())
         # for key, value in d.items():
         #     print(key, value.shape)
         # for n, p in net.named_parameters():
-        #     print('name: {}'.format(n))
+        #     print('name: {}, shape: {}'.format(n, p.shape))
 
         # writer.add_scalar('grad/loss', loss.item(), epoch * len(trainloader) + batch_idx + 1)
         # for n, p in net.named_parameters():
@@ -292,7 +324,7 @@ def test(epoch):
         best_acc = acc
 
 
-for epoch in range(start_epoch, start_epoch+int(100*3.5)):
+for epoch in range(start_epoch, int(100*3.5)):
     train(epoch)
     scheduler.step()
     test(epoch)

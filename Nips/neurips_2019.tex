@@ -26,6 +26,10 @@
 \usepackage{microtype}      % microtypography
 \usepackage{graphicx}
 
+\usepackage{floatrow}
+\newfloatcommand{capbtabbox}{table}[][\FBwidth]
+\usepackage{blindtext}
+
 \usepackage{geometry}
 \usepackage{amsmath}
 \usepackage{cancel}
@@ -35,7 +39,7 @@
 %\newcommand{\be}{\mathbf{e}}
 \newcommand{\bI}{\mathbf{I}}
 
-\title{PCA Denoising Layer}
+\title{Numerical Stable Singular Value Decomposition}
 
 % The \author macro works with any number of authors. There are two commands
 % used to separate the names and addresses of multiple authors: \And and \AND.
@@ -81,7 +85,7 @@
 \maketitle
 
 \begin{abstract}
-
+Singular Value Decomposition (SVD) has been widely used in deep learning, and matrix backpropagation algorithm is applied to compute the gradients. However, matrix backpropagation is numerically unstable as it involves the computation of reciprocal of the difference of arbitrary pair of eigenvalues which will cause overflow if the difference between the two eigenvalues are very small. In this paper, we propose to employ Power Iteration (PI) method to approximate the gradients of SVD during backpropagation. It can be proved that when the iteration number of PI goes to infinite, the gradients computed via PI will equal to the gradients of SVD. In other words, the gradients computed via PI can be viewed as the geometric series expansion of the gradients of SVD. The experimental results demonstrate that the proposed method, which uses SVD as forward pass and PI as backward pass, is more stable than SVD or PI. Besides, we also employs the numerically stable SVD to design a denoising layer by removing small eigenvalues during reconstruction, and it can further boost the performance of the network.
 \end{abstract}
 
 \section{PCA Denoising Layer}
@@ -383,10 +387,11 @@ The minimum value of $k$ to satisfy $(\lambda_i/\lambda_1)^k<0.05$ is $k = \lcei
 
 \begin{table}[!htb]
 \begin{center}
-\begin{tabular}{ccccccccccc}
+\setlength\tabcolsep{4pt}
+\begin{tabular}{ccccccccccccccc}
 \hline
-$\lambda_i/\lambda_1$ & 0.2 & 0.4 & 0.6 & 0.8 & \textbf{0.85} & 0.9 & 0.95 & 0.99 & 0.995 & 0.999 \\ \hline
-$k = \lceil \frac{\text{ln}(0.01)}{\text{ln}(\lambda_i/\lambda_1)} \rceil $     & 2   & 4   & 6   & 14  & \textbf{19}   & 29  & 59   & 299  & 598   & 2995  \\ \hline
+$\lambda_i/\lambda_1$ & 0.1& 0.2& 0.3 & 0.4 & 0.5 & 0.6 & 0.7 & 0.8 & \textbf{0.85} & 0.9 & 0.95 & 0.99 & 0.995 & 0.999 \\ \hline
+$k = \lceil \frac{\text{ln}(0.01)}{\text{ln}(\lambda_i/\lambda_1)} \rceil $   & 2 & 2 & 3 & 4 & 5 & 6 & 9 & 14  & \textbf{19}   & 29  & 59   & 299  & 598   & 2995  \\ \hline
 \end{tabular}
 \caption{The minimum value of $k$ we need to guarantee $(\lambda_i/\lambda_1)^k<0.05$.}
 \label{tab: kmin}
@@ -395,36 +400,145 @@ $k = \lceil \frac{\text{ln}(0.01)}{\text{ln}(\lambda_i/\lambda_1)} \rceil $     
 
 Table \ref{tab: kmin} shows the minimum number of iterations we need to guarantee that the assumption holds. We can observe that when the two eigenvalues are very close to each other \emph{e.g.}, $\lambda_i/\lambda_1=0.999$, we need about 3000 iterations to achieve a good approximation. However, in practice, the case is very rare, and we set power iteration number to be 19. This will satisfy most of the cases. Besides, two very close eigenvalues usually leads to overflow according to Eq.\ref{eq: final-form} as the denominator $\lambda_1 - \lambda_i$ would be close to 0, but with our approximation, this problem could be avoided, and our method is more numerical stable.
 
+\subsection{Percentage of Preserved Information VS Performance}
+
+\begin{figure}[!htb]
+\begin{floatrow}
+\ffigbox[1.1\FBwidth]{%
+  \includegraphics[width=\linewidth]{information.eps}
+}
+{%
+  \caption{Preserved information VS Performance.}%
+}
+\capbtabbox[.9\Xhsize]{%
+\begin{tabular}{cc}
+\hline
+Percentage (\%) & Error (\%) \\ \hline
+85              & $5.60\pm0.74$  \\ \hline
+90              & $5.05\pm0.07$  \\ \hline
+95              & $4.67\pm0.06$  \\ \hline
+99              & $\mathbf{4.63\pm0.11}$  \\ \hline
+99.5            & $4.72\pm0.10$  \\ \hline
+100             & $4.81\pm0.19$  \\ \hline
+\\
+\end{tabular}
+}{%
+  \caption{Performance Comparison}%
+}
+\end{floatrow}
+\end{figure}
+
+\subsection{Number of EigenVectors VS Performance}
+
+\begin{figure}[!htb]
+\begin{floatrow}
+\ffigbox[1.1\FBwidth]{%
+  \includegraphics[width=\linewidth]{eig.eps}
+}
+{%
+  \caption{Eigen-vector No. VS Performance.}%
+}
+\capbtabbox[.9\Xhsize]{%
+\begin{tabular}{cc}
+\hline
+Eig-vector No. & Error (\%) \\ \hline
+2              & $4.72 \pm 0.10$  \\ \hline
+4              & $4.63 \pm 0.09$  \\ \hline
+8              & $4.67 \pm 0.09$ \\ \hline
+16            & $4.61 \pm 0.14$  \\ \hline
+32             & $4.65 \pm 0.08$  \\ \hline
+\\
+\end{tabular}
+}{%
+  \caption{Performance Comparison}%
+}
+\end{floatrow}
+\end{figure}
+
+\subsection{Number of Power Iterations VS Performance}
+
+\begin{figure}[!htb]
+\begin{floatrow}
+\ffigbox[1.1\FBwidth]{%
+  \includegraphics[width=\linewidth]{pi.eps}
+}
+{%
+  \caption{Power Iteration No. VS Performance.}%
+}
+\capbtabbox[.9\Xhsize]{%
+\begin{tabular}{cc}
+\hline
+Power Iteration No. & Error (\%) \\ \hline
+1              & $4.72 \pm 0.10$  \\ \hline
+2              & $4.63 \pm 0.09$  \\ \hline
+4              & $4.67 \pm 0.09$  \\ \hline
+9              & $4.61 \pm 0.14$ \\ \hline
+14            & $4.69 \pm 0.11$  \\ \hline
+19             & $4.63 \pm 0.11$  \\ \hline
+29             & $\mathbf{4.61 \pm 0.03}$  \\ \hline
+\end{tabular}
+}{%
+  \caption{Performance Comparison}%
+}
+\end{floatrow}
+\end{figure}
+
 \section{Experiment}
 
 In the experiment, within the PCA denoising layer, we remove the noise in the feature maps by only selecting its top-$k$ eigenvectors to reconstruct the input feature maps.
 We first reshape the input feature maps $X_{n {\times} c {\times} h {\times} w}$ to $X_{c {\times} nhw}$, and compute the covariance matrix $Var(X) =\frac{XX^{\top}}{nhw-1}$.
 The constraint for $k$ is that $\frac{\sum_{i=1}^k\lambda_i}{\sum_{i=1}^n\lambda_i} \geq 0.95$, which means that $95\%$ of the information is preserved and the rest of the information which is lower than $5\%$ is removed. 
-In practice, $k$ is relatively small compared with channel number $c$. For instance, in the first convolutional layer in ResNet18 which has the channel 64, we observe that $95\%$ of the information could be preserved when $k=8, \text{or} \; 9$.
+In practice, $k$ is relatively small compared with channel number $c$. For instance, on Cifar10 dataset, after the first convolutional layer in ResNet18 which has the channel 64, we observe that \\
+more than $95\%$ of the information could be preserved when $k=7$; \\
+more than $99\%$ of the information could be preserved when $k=15$; \\
+more than $99.5\%$ of the information could be preserved when $k=31$. 
 
-\begin{table}[!htb]
-\begin{centering}
-\begin{tabular}{|l|c|c|c|c|}
+%\begin{table}[!htb]
+%\begin{centering}
+%\begin{tabular}{|l|c|c|c|c|}
+%\hline
+%Norm Methods          & BN        & PCA(PI)  & PCA(SVD) & PCA(SVD+PI) \\ \hline
+%Minimum Error         & 4.66       & 5.05   & NaN   &\textbf{4.58}\\ \hline
+%Mean Error (4) & $4.81{\pm}0.19$ &$5.35{\pm}0.25$ & NaN &$\mathbf{4.67{\pm}0.06}$ \\ \hline
+%\end{tabular}
+%\caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
+%\end{centering}
+%\end{table}
+
+\begin{figure}[!htb]
+\begin{floatrow}
+\ffigbox[0.9\FBwidth]{%
+  \includegraphics[width=\linewidth]{convergence.pdf}
+}
+{%
+  \caption{Methods VS Performance.}%
+}
+\capbtabbox[\Xhsize]{%
+\begin{tabular}{lcc}
 \hline
-Norm Methods          & BN        & PCA(PI)  & PCA(SVD) & PCA(SVD+PI) \\ \hline
-Minimum Error         & 4.66       & 5.05   & NaN   &\textbf{4.58}\\ \hline
-Mean Error (4) & $4.81{\pm}0.19$ &$5.35{\pm}0.25$ & NaN &$\mathbf{4.67{\pm}0.06}$ \\ \hline
+Methods     & Min Error & Mean Error (5) \\ \hline
+BN          & 4.66      & $4.81{\pm}0.19$   \\ \hline
+PCA(PI)     & 5.05      & $5.35{\pm}0.25$ \\ \hline
+PCA(SVD)    & NaN       & NaN                   \\ \hline
+PCA(SVD+PI) & 4.58      & $\mathbf{4.67{\pm}0.06}$ \\ \hline
+\\
+\\
+\\
 \end{tabular}
-\caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
-\end{centering}
-\end{table}
-
-\begin{figure}
-\includegraphics[width=0.5\linewidth]{convergence.pdf}
+}{%
+  \caption{Methods VS Performance.}%
+}
+\end{floatrow}
 \end{figure}
+
 
 \begin{table}[!htb]
 \begin{centering}
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
 Norm Methods          & BN        & PCA(1 layer)   & ZCA(1 layer)  & PCA(1 block)   & ZCA(1 block) \\ \hline
-Minimum Error         & 4.66      &  4.58  &   4.91 &  5.14 &  \\ \hline
-Mean Error (4) & $4.81{\pm}0.19$  &  $4.67{\pm}0.06$  & $5.02{\pm}0.28$ & $5.30{\pm}0.12$ &  \\ \hline
+Minimum Error         & 4.66      &  4.58  &   4.91 &  5.14 &  5.38\\ \hline
+Mean Error (4) & $4.81{\pm}0.19$  &  $4.67{\pm}0.06$  & $5.02{\pm}0.28$ & $5.30{\pm}0.12$ & $5.50{\pm}0.10$ \\ \hline
 \end{tabular}
 \caption{CIFAR-10 test errors using ResNet18 (single PCA/ZCA normalization layer).}
 \end{centering}
