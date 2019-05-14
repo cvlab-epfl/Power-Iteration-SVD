@@ -119,8 +119,8 @@ net = resnet18(Norm=Norm)  # resnet18(Norm=Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'_zcapi8group100pct19pi-debug', '{}-bs{}'.format(norm, BatchSize), str(id))  #_zcapi16group100pct19pi _bn _1layer95pct29pi
-
+logdir = os.path.join(save_dir, model_name+'18'+'_zcapi8group100pct19pi-debug', '{}-bs{}'.format(norm, BatchSize), str(id))  # _bn _1layer95pct29pi
+# _zcapi4group100pct19pi
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 
@@ -197,7 +197,8 @@ def train(epoch):
         loss = criterion(outputs, targets)
 
         if isnan(loss):
-            print('nan found, paras from previous update:')
+            print('nan found')
+            print('paras from previous update:')
             for n, p in net.named_parameters():
                 if p.requires_grad and ("layer1" not in n) and ("layer2" not in n) and ("layer3" not in n) and (
                         "layer4" not in n):

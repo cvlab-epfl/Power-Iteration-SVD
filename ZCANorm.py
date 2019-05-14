@@ -13,7 +13,8 @@ from torch_utils import *
 
 from tensorboardX import SummaryWriter
 import os
-
+import numpy as np
+import math
 
 n_eigens_debug = 20
 # save_dir = 'runs'
@@ -37,7 +38,7 @@ def print_grad(grad):
 
 
 class ZCANormOrg(nn.Module):
-    def __init__(self, num_features, groups=8, eps=1e-4, momentum=0.1, affine=True):
+    def __init__(self, num_features, groups=4, eps=1e-4, momentum=0.1, affine=True):
         super(ZCANormOrg, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -132,7 +133,7 @@ class ZCANormOrg(nn.Module):
 
 
 class ZCANormPI(nn.Module):
-    def __init__(self, num_features, groups=8, eps=1e-4, momentum=0.1, affine=True):
+    def __init__(self, num_features, groups=4, eps=1e-4, momentum=0.1, affine=True):
         super(ZCANormPI, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -430,25 +431,44 @@ class ZCANormPI_debug(nn.Module):
             xgr_list = []
             for i in range(G):
                 subspace = torch.zeros_like(xxtj[i])
+                print('mat: ', xxtj[i])
+                tmp_v = []
+
                 with torch.no_grad():
                     u, e, v = torch.svd(xxtj[i])
                     # print('eigenvalues via svd: {}'.format(e))
                 for j in range(length):
                     # initialize eigenvector with random values
                     eigenvector_ij = self.__getattr__('eigenvector{}-{}'.format(i, j))
-                    if j <= 1:
-                        eigenvector_ij.data = v[:, j][..., None].data
-                    else:
-                        vrand = l2normalize(torch.randn_like(eigenvector_ij))
-                        eigenvector_ij.data = vrand.data
+                    # if j <= 0:
+                    #     eigenvector_ij.data = v[:, j][..., None].data
+                    # else:
+                    #     vrand = l2normalize(torch.randn_like(eigenvector_ij))
+                    #     eigenvector_ij.data = vrand.data
 
+                    vrand = l2normalize(torch.randn_like(eigenvector_ij))
+                    print('vrand: ', vrand.t())
+                    tmp_v.append(vrand)
+
+                    eigenvector_ij.data = vrand.data
                     eigenvector_ij = self.power_layer(xxtj[i], eigenvector_ij)
+                    # eps = 1e-06
+                    if j>0:
+                        print('PI eig-{} (angle) between current and dominant eigenvectors'.format(j),
+                              F.cosine_similarity(eigenvector_ij, v[:, 0][..., None], dim=0).clamp(-1.0, 1.0).abs().acos().item()/math.pi*180
+                              )
+                        print('SVD eig-{} (angle) between current and dominant eigenvectors'.format(j),
+                              F.cosine_similarity(v[:, j][..., None], v[:, 0][..., None], dim=0).clamp(-1.0, 1.0).abs().acos().item() / math.pi * 180
+                              )
                     # eigenvector_ij.register_hook(print)
                     lambda_ij = torch.mm(xxtj[i].mm(eigenvector_ij).t(), eigenvector_ij)/torch.mm(eigenvector_ij.t(), eigenvector_ij)
-                    # print('lambda_group{}_{}: {}'.format(i, j, lambda_ij.item()))
+                    print('lambda_group{}_{}: {} vs gt {}'.format(i, j, lambda_ij.item(), e[j].item()))
                     subspace += torch.mm(eigenvector_ij, torch.rsqrt(lambda_ij).mm(eigenvector_ij.t()))
                     # remove projections on the eigenvectors
                     xxtj[i] = xxtj[i] - torch.mm(xxtj[i], eigenvector_ij.mm(eigenvector_ij.t()))
+                    if lambda_ij<0:
+                        import IPython
+                        IPython.embed()
 
                 xgr = torch.mm(subspace, xg[i])
                 xgr_list.append(xgr)
