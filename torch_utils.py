@@ -55,14 +55,14 @@ class power_iteration_unstable(th.autograd.Function):
         vk_list = ctx.saved_tensors[1:]
         dL_dvk1 = grad_output
         dL_dM = 0
-
+        # print('debug before mat-bp gradients', dL_dvk1.abs().max().item())
         for i in range(1, ctx.num_iter + 1):
             v_k1 = vk_list[-i]
             v_k = vk_list[-i - 1]
             mid = calc_mid(M, v_k, v_k1, dL_dvk1)
             dL_dM += mid.mm(th.t(v_k))
             dL_dvk1 = M.mm(mid)
-
+        # print('debug after mat-bp gradients', dL_dM.abs().max().item())
         return dL_dM, dL_dvk1
 
 
