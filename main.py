@@ -89,6 +89,8 @@ elif norm == 'zcanormorg':
     Norm = ZCANormOrg
 elif norm == 'zcanormpi':
     Norm = ZCANormPI
+elif norm == 'zcanormpiunstable':
+    Norm = ZCANormPIunstable
 elif norm == 'pcanorm':
     Norm = myPCANorm
 elif norm == 'pcanormfloat':
@@ -111,7 +113,7 @@ net = resnet18(Norm=Norm)  # resnet18(Norm=Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'_zcapi16group100pct19pi', '{}-bs{}'.format(norm, BatchSize), str(id))  # _bn _1layer95pct29pi
+logdir = os.path.join(save_dir, model_name+'18'+'_zcapi-unstable-16group100pct19pi', '{}-bs{}'.format(norm, BatchSize), str(id))  #_zcapi16group100pct19pi _bn _1layer95pct29pi
 
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
