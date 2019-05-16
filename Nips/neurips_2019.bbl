@@ -1,5 +1,23 @@
 \begin{thebibliography}{1}
 
+\bibitem{huang2018decorrelated}
+Lei Huang, Dawei Yang, Bo~Lang, and Jia Deng.
+\newblock Decorrelated batch normalization.
+\newblock In {\em Proceedings of the IEEE Conference on Computer Vision and
+  Pattern Recognition}, pages 791--800, 2018.
+
+\bibitem{ionescu2015matrix}
+Catalin Ionescu, Orestis Vantzos, and Cristian Sminchisescu.
+\newblock Matrix backpropagation for deep networks with structured layers.
+\newblock In {\em Proceedings of the IEEE International Conference on Computer
+  Vision}, pages 2965--2973, 2015.
+
+\bibitem{Zanfir_2018_CVPR}
+Andrei Zanfir and Cristian Sminchisescu.
+\newblock Deep learning of graph matching.
+\newblock In {\em The IEEE Conference on Computer Vision and Pattern
+  Recognition (CVPR)}, June 2018.
+
 \bibitem{nakatsukasa2013stable}
 Yuji Nakatsukasa and Nicholas~J Higham.
 \newblock Stable and efficient spectral divide and conquer algorithms for the
@@ -12,11 +30,5 @@ Mang Ye, Andy~J Ma, Liang Zheng, Jiawei Li, and Pong~C Yuen.
   re-identification.
 \newblock In {\em Proceedings of the IEEE International Conference on Computer
   Vision}, pages 5142--5150, 2017.
-
-\bibitem{ionescu2015matrix}
-Catalin Ionescu, Orestis Vantzos, and Cristian Sminchisescu.
-\newblock Matrix backpropagation for deep networks with structured layers.
-\newblock In {\em Proceedings of the IEEE International Conference on Computer
-  Vision}, pages 2965--2973, 2015.
 
 \end{thebibliography}
