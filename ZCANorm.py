@@ -39,7 +39,7 @@ def print_grad(grad):
 
 
 class ZCANormOrg(nn.Module):
-    def __init__(self, num_features, groups=4, eps=1e-4, momentum=0.1, affine=True):
+    def __init__(self, num_features, groups=16, eps=1e-4, momentum=0.1, affine=True):
         super(ZCANormOrg, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -454,9 +454,10 @@ class ZCANormPIunstable(nn.Module):
             xgr_list = []
             for i in range(G):
                 subspace = torch.zeros_like(xxtj[i])
-                with torch.no_grad():
-                    u, e, v = torch.svd(xxtj[i])
-                    print('eigenvalues via svd: {}'.format(e))
+                # with torch.no_grad():
+                #     print(xxtj[i])
+                #     u, e, v = torch.svd(xxtj[i])
+                #     print('eigenvalues via svd: {}'.format(e))
                 for j in range(length):
                     # initialize eigenvector with random values
                     eigenvector_ij = self.__getattr__('eigenvector{}-{}'.format(i, j))
@@ -465,10 +466,14 @@ class ZCANormPIunstable(nn.Module):
 
                     eigenvector_ij = self.power_layer(xxtj[i], eigenvector_ij)
                     # eigenvector_ij.register_hook(print)
-                    lambda_ij = torch.mm(xxtj[i].mm(eigenvector_ij).t(), eigenvector_ij)/torch.mm(eigenvector_ij.t(), eigenvector_ij)
-
-                    print('lambda_group{}_{}: {}'.format(i, j, lambda_ij.item()))
-
+                    lambda_current = torch.mm(xxtj[i].mm(eigenvector_ij).t(), eigenvector_ij)/torch.mm(eigenvector_ij.t(), eigenvector_ij)
+                    if j == 0:
+                        lambda_ij = lambda_current
+                    elif lambda_ij < lambda_current or lambda_current < self.eps:
+                        # print('lambda_group{}_{}: current:{} previous:{}'.format(i, j, lambda_ij.item(), lambda_current.item()))
+                        break
+                    else:
+                        lambda_ij = lambda_current
                     subspace += torch.mm(eigenvector_ij, torch.rsqrt(lambda_ij).mm(eigenvector_ij.t()))
                     # remove projections on the eigenvectors
                     xxtj[i] = xxtj[i] - torch.mm(xxtj[i], eigenvector_ij.mm(eigenvector_ij.t()))

@@ -1,0 +1,207 @@
+% !TEX root = ../top.tex
+% !TEX spellcheck = en-US
+
+\section{Appendix}
+\label{sec:appendix}
+\section{Approximate SVD gradient with Power Iteration in backpropogation}
+In the following 2 subsections, we will prove that when the gradient computed from Power Iteration equals to the gradients computed from SVD.
+	\subsection{Gradient of Power Iteration}
+	\label{sec: pi}
+	To compute the leading eigenvector $\bv$ of $\bM$, Power Iteration uses the following standard formula,
+	\begin{equation}
+	\bv^{(k)} = \frac{\bM\bv^{(k-1)}}{\| \bM\bv^{(k-1)} \|},
+	\end{equation}
+	in which $\| {\cdot} \|$ denotes the $l_2$ norm, and $v^{(0)}$ is usually initialized randomly with  $\|v^{(0)}\|{=}1$.
+    Its gradient formula is as follows~\cite{ye2017dynamic},
+	\begin{equation}
+	\begin{aligned} 
+	\frac{\partial L}{\partial \bM} &=\sum_{k} \frac{\left(\bI-\bv^{(k+1)} \bv^{(k+1)\top}\right)}{\left\|\bM \bv^{(k)}\right\|} \frac{\partial L}{\partial \bv^{(k+1)}} \bv^{(k)\top} \\
+	\frac{\partial L}{\partial \bv^{(k)}} &=\bM \frac{\left(\bI-\bv^{(k+1)} \bv^{(k+1)\top}\right)}{\left\|\bM \bv^{(k)}\right\|} \frac{\partial L}{\partial \bv^{(k+1)}} 
+	\end{aligned}
+	\end{equation}
+	Using 3 power iteration steps for demonstration.
+	\begin{equation}
+	\begin{aligned} 
+	\frac{\partial L}{\partial \bv^{(2)}} &=\bM \frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}}\\
+	\frac{\partial L}{\partial \bv^{(1)}} &=\bM \frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{(2)}}
+	=\bM \frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} 
+	\bM \frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}}
+	\end{aligned}
+	\end{equation}
+	
+	Then the $\frac{\partial L}{\partial \bM}$ should be like the following, for the reason that we use eigenvalue decomposition (ED)'s result, denoted as $\bv$ as initial value, then $\bv {=} \bv^{(0)} {\approx}\bv^{(1)} {\approx} \bv^{(2)}{\approx} \cdots {\approx}\bv^{(k)}$. 
+	
+	\begin{equation}
+	\begin{aligned} 
+	\frac{\partial L}{\partial \bM}
+	&{=}\frac{\left(\bI-\bv^{(3)} \bv^{(3)\top}\right)}{\left\|\bM \bv^{(2)}\right\|} \frac{\partial L}{\partial \bv^{(3)}} \bv^{(2)\top} +
+	\frac{\left(\bI-\bv^{(2)} \bv^{(2)\top}\right)}{\left\|\bM \bv^{(1)}\right\|} \frac{\partial L}{\partial \bv^{(2)}} \bv^{(1)\top} + 
+	\frac{\left(\bI-\bv^{(1)} \bv^{(1)\top}\right)}{\left\|\bM \bv^{(0)}\right\|} \frac{\partial L}{\partial \bv^{(1)}} \bv^{(0)\top}\\
+	&{=} \left( \frac{\left(\bI {-} \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} {+}
+	 \frac{\left(\bI {-} \bv \bv^{\top}\right) \bM  \left(\bI {-} \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}}  {+} 
+	 \frac{\left(\bI {-} \bv \bv^{\top}\right) \bM \left(\bI {-} \bv \bv^{\top}\right) \bM \left(\bI {-} \bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{3}} \right)
+	 \frac{\partial L}{\partial \bv^{(3)}} \bv^{\top}
+	\end{aligned}
+	\label{eq: pi_expand}
+	\end{equation}
+	
+	Known that $\bv \bv^{\top}$ and $\bM$ are symmetric and $\bM \bv = \lambda \bv$, we have 
+$$\bv\bv^{\top}\bM = (\bM^{\top}\bv\bv^{\top})^{\top} = (\bM\bv\bv^{\top})^{\top} = (\lambda\bv\bv^{\top})^{\top} = \lambda\bv\bv^{\top} = \bM\bv\bv^{\top}.$$
+	Introducing the equation above into the numerator in the second term of Eq.\ref{eq: pi_expand}, we can obtain:
+	\begin{equation}
+	\begin{aligned}
+	\left(\bI - \bv \bv^{\top}\right) \bM  \left(\bI - \bv \bv^{\top}\right) &
+	= \left(\bM - \bv \bv^{\top}\bM\right) \left(\bI - \bv \bv^{\top}\right) 
+	=  \left(\bM - \bM \bv \bv^{\top}\right) \left(\bI - \bv \bv^{\top}\right) \\
+	= \bM \left(\bI - \bv \bv^{\top}\right) \left(\bI - \bv \bv^{\top}\right) &
+	= \bM \left(\bI - 2\bv \bv^{\top} + \bv \cancel{\left(\bv^{\top}\bv \right)} \bv^{\top}\right) 
+	= \bM \left(\bI - \bv \bv^{\top} \right).
+	\end{aligned}
+	\label{eq: term1}
+	\end{equation}
+	Similarly, for the numerator in the third term in Eq.\ref{eq: pi_expand}, we have:
+	\begin{equation}
+	\left(\bI - \bv \bv^{\top}\right) \bM \left(\bI - \bv \bv^{\top}\right) \bM \left(\bI - \bv \bv^{\top}\right) = \bM \bM \left(\bI - \bv \bv^{\top} \right).
+	\label{eq: term2}
+	\end{equation}
+	
+Introducing Eq.\ref{eq: term1} and Eq.\ref{eq: term2} into Eq.\ref{eq: pi_expand}, we can obtain	
+	\begin{equation}
+	\frac{\partial L}{\partial \bM}
+	 = \left( \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|} +
+	 \frac{\bM \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}}  + 
+	 \frac{\bM \bM \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{3}} \right)
+	 \frac{\partial L}{\partial \bv^{(3)}} \bv^{\top}
+	\label{eq: pi_3iter}
+	\end{equation}
+
+Extending the iteration number from 3 to $k$, Eq.\ref{eq: pi_expand} will be extended as
+	\begin{equation}
+	\frac{\partial L}{\partial \bM}
+	 = \left( \frac{\left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|}  +
+	 \frac{\bM \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{2}}  + \cdots +
+	 \frac{\bM^{k-1} \left(\bI-\bv \bv^{\top}\right)}{\left\|\bM \bv\right\|^{k}} \right) \frac{\partial L}{\partial \bv^{(k)}}
+	\bv^{\top}
+	\label{eq: pi_pytorch}
+	\end{equation}	
+
+Eq.\ref{eq: pi_pytorch} is the form we adopt to compute the gradients of SVD, and we set $k{=}19$.
+	
+	\subsection{Matrix Back-propagation}
+	\label{sec: mbp}
+	The analytic soltions of the gradients are from matrix back-propagation~\cite{ionescu2015matrix}.
+	\begin{equation}
+	\begin{aligned}
+	\frac{\partial L}{\partial M}=V\left\{\left(\tilde{K}^{\top} \circ\left(V^{\top} \frac{\partial L}{\partial V}\right)\right)+\left(\frac{\partial L}{\partial \Sigma}\right)_{d i a g}\right\} V^{\top}
+	\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+	\begin{aligned}
+	\tilde{K}_{i j}=\left\{\begin{array}{ll}{\frac{1}{\lambda_{i}-\lambda_{j}},} & {i \neq j} \\ {0,} & {i=j}\end{array}\right.
+	\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+	\begin{aligned}
+	\tilde{K} = 
+	\begin{bmatrix}
+	0  &\frac{1}{\lambda_{1} - \lambda_{2}} &\frac{1}{\lambda_{1} - \lambda_{3}} &\cdots &\frac{1}{\lambda_{1} - \lambda_{n}}\\
+	\frac{1}{\lambda_{2} - \lambda_{1}} &0 &\frac{1}{\lambda_{2} - \lambda_{3}} &\cdots &\frac{1}{\lambda_{2} - \lambda_{n}}\\
+	\frac{1}{\lambda_{3} - \lambda_{1}} &\frac{1}{\lambda_{3} - \lambda_{2}} &0 &\cdots &\frac{1}{\lambda_{3} - \lambda_{n}}\\
+	\vdots &\vdots &\vdots &\ddots &\vdots\\
+	\frac{1}{\lambda_{n} - \lambda_{1}} &\frac{1}{\lambda_{n} - \lambda_{2}} &\frac{1}{\lambda_{n} - \lambda_{3}} &\cdots &0
+	\end{bmatrix}
+	\end{aligned}
+	\end{equation}
+	where $\lambda_{i}$ is the eigen-value.
+	
+	\begin{equation}
+	\begin{aligned}
+	V = 
+	\begin{bmatrix}
+	\bv_{1} &\bv_{2} &\bv_{3} &\cdots &\bv_{n}
+	\end{bmatrix}
+	\end{aligned}
+	\end{equation}
+	where $v_{i}$ is the eigen-vector.
+	
+	\begin{equation}
+	\begin{aligned}
+	\frac{\partial L}{\partial V} = 
+	\begin{bmatrix}
+	\frac{\partial L}{\partial \bv_{1}} &\frac{\partial L}{\partial \bv_{2}}  &\frac{\partial L}{\partial \bv_{3}}  &\cdots &\frac{\partial L}{\partial \bv_{n}} \\
+	\end{bmatrix}
+	\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+	\begin{aligned}
+	V^{\top}\frac{\partial L}{\partial V} = 
+	\begin{bmatrix}
+	\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{1}} &\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{2}}  &\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{3}}  &\cdots &\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{1}} &\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{2}}  &\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{3}}  &\cdots &\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{1}} &\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{2}}  &\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{3}}  &\cdots &\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\vdots &\vdots &\vdots &\ddots &\vdots\\
+	\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{1}} &\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{2}}  &\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{3}}  &\cdots &\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\end{bmatrix}
+	\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+	\begin{aligned}
+	\tilde{K}\circ V^{\top}\frac{\partial L}{\partial V} = 
+	\begin{bmatrix}
+	0& \frac{1}{\lambda_{2} - \lambda_{1}}\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{2}}  
+	&\frac{1}{\lambda_{3} - \lambda_{1}}\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{3}}  
+	&\cdots &\frac{1}{\lambda_{n} - \lambda_{1}}\bv_{1}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\frac{1}{\lambda_{1} - \lambda_{2}}\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{1}} &0  
+	&\frac{1}{\lambda_{3} - \lambda_{2}}\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{3}}  &\cdots 
+	&\frac{1}{\lambda_{n} - \lambda_{2}}\bv_{2}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\frac{1}{\lambda_{1} - \lambda_{3}}\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{1}} 
+	&\frac{1}{\lambda_{2} - \lambda_{3}}\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{2}}  &0  &\cdots 
+	&\frac{1}{\lambda_{n} - \lambda_{3}}\bv_{3}^{\top}\frac{\partial L}{\partial \bv_{n}} \\
+	\vdots &\vdots &\vdots &\ddots &\vdots\\
+	\frac{1}{\lambda_{1} - \lambda_{n}}\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{1}} 
+	&\frac{1}{\lambda_{2} - \lambda_{n}}\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{2}} 
+	 &\frac{1}{\lambda_{3} - \lambda_{n}}\bv_{n}^{\top}\frac{\partial L}{\partial \bv_{3}}  &\cdots &0 \\
+	\end{bmatrix}
+	\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+	\begin{aligned}
+	V \tilde{K}\circ V^{\top}\frac{\partial L}{\partial V} &=
+	\begin{bmatrix}
+	\sum_{i\neq 1}^{n}\frac{1}{\lambda_{1}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{1}},
+	& \sum_{i\neq 2}^{n}\frac{1}{\lambda_{2}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{2}}, 
+	&\cdots,
+	&\sum_{i\neq n}^{n}\frac{1}{\lambda_{n}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{n}}
+	\end{bmatrix}
+	\end{aligned}
+	\end{equation}	
+	
+	\begin{equation}
+	V \tilde{K}\circ V^{\top}\frac{\partial L}{\partial V} V^{\top} =
+	\sum_{i\neq 1}^{n}\frac{1}{\lambda_{1}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{1}} \bv_{1}
+	+ \sum_{i\neq 2}^{n}\frac{1}{\lambda_{2}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{2}} \bv_{2}
+	+\cdots
+	+\sum_{i\neq n}^{n}\frac{1}{\lambda_{n}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{n}} \bv_{n}
+	\end{equation}	
+	
+	\begin{equation}
+    V\left(\frac{\partial L}{\partial \Sigma}\right)_{d i a g} V^{\top} = \sum_{i=1}^n \frac{\partial L}{\partial \lambda_i}\bv_{i}\bv_{i}^{\top}
+	\end{equation}    	
+	
+	%We do not use eigenvalues in the forward pass, so that it has no gradients, which means $\frac{\partial L}{\partial \Sigma}=0$.
+	Now let's consider the partial derivative \emph{w.r.t} dominant eigenvector $\bv_{i}$ and ignore the rest $\frac{\partial L}{\partial \bv_{i}}, i \neq 1$.
+	Then $\frac{\partial L}{\partial M}$ would be,
+	
+	\begin{equation}
+	\frac{\partial L}{\partial M}=\sum_{i=2}^{n}\frac{1}{\lambda_{1}-\lambda_{i}}\bv_{i}\bv_{i}^{\top}\frac{\partial L}{\partial \bv_{1}}\bv_{1}^{\top} + \frac{\partial L}{\partial \lambda_1}\bv_{1}\bv_{1}^{\top}
+	\end{equation}
+If the network does not involve the eigenvalues, the derivative of the eigenvalues will be 0 and it could be ignored. In other words, the second term in the equation above could be ignored.
+Now we have shown that the partial derivative of \emph{e.g.}, $\bv_1$ computed from Power Iteration and SVD share the same form when $k\rightarrow \inf$.
+Similar deductions could be done for  $\bv_i, i=2,3,\cdots, n$.
+
+

@@ -1,0 +1,38 @@
+% !TEX root = ../top.tex
+% !TEX spellcheck = en-US
+
+\section{Introduction}
+SVD has been widely used in deep learning algorithms, such as ZCA whitening \cite{huang2018decorrelated}, second-order pooling for segmentation \cite{ionescu2015matrix}, and graph marching \cite{Zanfir_2018_CVPR}. Even though SVD is differentiable, it is very unstable for large dimension matrices. One way to alleviate the instability is to use small dimension matrix. For instance, the channels are split into smaller groups, and only the covariance matrix within each small group is computed whose dimension is 3. The other way to avoid this instability is to use power iteration to compute the eigenvectors \cite{Zanfir_2018_CVPR}. 
+
+Power Iteration method can be employed to approximate all the eigenvalues through \textbf{deflation} procedure. In the deflation procedure, the projections of the matrix on the dominant eigenvector is removed one by one. After each removal operation, the second largest eigenvalue would become the largest one, and Power Iteration method could be used repeatedly to compute all the eigenvectors. However, power iteration method is only good at approximating the largest eigenvectors, it is a bad idea to use power iteration method to compute all the eigevectors as it brings round-off errors, and it has the premise that all eigenvalues are unique which does not strictly hold in the real application.
+
+\subsection{Problem of SVD}
+SVD has accurate and stable forward pass. However, it has accurate but \textbf{numerical unstable} gradients.
+The analytic soltions of its gradients are from matrix back-propagation~\cite{ionescu2015matrix}.
+	\begin{equation}
+	\begin{aligned}
+	\frac{\partial L}{\partial M}=V\left\{\left(\widetilde{K}^{\top} \circ\left(V^{\top} \frac{\partial L}{\partial V}\right)\right)+\left(\frac{\partial L}{\partial \Sigma}\right)_{d i a g}\right\} V^{\top}
+	\end{aligned}
+	\label{eq: mb}
+	\end{equation}
+in which $\bM$ is the covariance matrix and $V$ is the eigenvector, and $\widetilde{K}$ has the form as
+\begin{equation}
+	\begin{aligned}
+	\widetilde{K}_{i j}=\left\{\begin{array}{ll}{\frac{1}{\lambda_{i}-\lambda_{j}},} & {i \neq j} \\ {0,} & {i=j}\end{array}\right.
+	\end{aligned}
+	\label{eq: mb_k}
+	\end{equation}
+From the equation above, we can observe that when $\lambda_{i}$ is very close to $\lambda_{j}$, the gradients will be extremely large can cause arithmetic overflow.
+Let's consider an extreme case in which $\lambda_{i}-\lambda_{j}=0$, the gradients will explode as it is divided by 0. Power Iteration method could avoid this by doing Talyer expansion of the term, and the details are available in Section \ref{subsec: talyer-expansion}.
+
+\subsection{Problem of Power Iteration}
+
+Power Iteration (PI) method has more stable gradients than that of SVD. In fact, the gradients of PI can be viewed as a the Talyer expansion of the gradients of SVD. The details are available in Section \ref{subsec: talyer-expansion}. However, it is very numerically unstable in the forward pass, and it may fail due to a lot of reasons. 
+One of the failure cases that is frequently observed during the training of Cifar10 is when the covariance matrix is singular. 
+
+Let matrix $\bM$ be singular. In the \textbf{deflation} procedure, after removing the projections of matrix $\bM$ on the eigenvectors with non-zero eigenvalues, we obtain $\widetilde{\bM}$, which is a close-to-zero matrix with round-off errors. In such situation, the eigenvector $\widetilde{V}$ could be arbitrary and the corresponding eigenvalue computed by the Rayleigh quotient $\frac{\widetilde{V}^{\top} \widetilde{\bM} \widetilde{V}}{\widetilde{V}^{\top}  \widetilde{V}}$ will be incorrect. Such case is catastrophic during the model training process as it will cause arithmetic overflow and destroy the model parameters during backpropagation. One real failure case caught during the training of Cifar10 is shown in the supplementary material.
+
+Another unstable factor of PI is when the eigenvalues are not unique. If two eigenvalues are very close to each other, it requires an extremely large number of iterations to approximate the correct eigenvectors, and this is prohibitive in the real applications. The limited number of iterations can hardly compute the correct eigenvectors and will lead to instability in the training. One real case study is shown in the experiments. The relationship between the number of power iteration and the approximated eigenvectors is also illustrated in Section ***. SVD is free of these problems.
+
+To sum up, SVD has the problem during the backpropagation while PI has the problem of computing eigenvectors in the forward pass.
+To solve the problems of both SVD and PI, we propose to combine these two methods together, that is, SVD is used to compute the forward pass and PI is used to compute the gradients in the backward pass.
