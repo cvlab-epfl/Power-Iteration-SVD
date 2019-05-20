@@ -106,7 +106,7 @@ elif norm == 'pcanormfloat':
 elif norm == 'pcanorm-norec':
     Norm = myPCANorm_noRec
 # net = VGG('VGG19')
-net = resnet18(Norm=Norm)  # resnet18(Norm=Norm)
+net = resnet18(Norm=Norm, num_classes=10)  # resnet18(Norm=Norm)
 # net = PreActResNet18()
 # net = GoogLeNet()
 # net = DenseNet121()
@@ -121,8 +121,8 @@ net = resnet18(Norm=Norm)  # resnet18(Norm=Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'_zcapi1group100pct19pi', '{}-bs{}'.format(norm, BatchSize), str(id))  # _bn _1layer95pct29pi
-# _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug
+logdir = os.path.join(save_dir, 'cifar10', model_name+'18'+'_zcapi8group', '{}-bs{}'.format(norm, BatchSize), str(id))
+# _1layer95pct29pi _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug,  _zcapi1group
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 
@@ -134,6 +134,12 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+# optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
+
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
+
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -142,21 +148,9 @@ if args.resume:
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
-    if start_epoch<100:
-        args.lr = 0.1
-    elif start_epoch <200:
-        args.lr = 0.01
-    elif start_epoch <300:
-        args.lr = 0.001
-    else:
-        args.lr = 0.0001
 
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-# optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
-
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
-
+    scheduler.load_state_dict(checkpoint['scheduler'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
 
 # Training
 # net.load_state_dict(torch.load('net-31-1188.pt'))
@@ -338,6 +332,8 @@ def test(epoch):
             'net': net.state_dict(),
             'acc': acc,
             'epoch': epoch,
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict(),
         }
         # if not os.path.isdir('checkpoint'):
         #     os.mkdir('checkpoint')

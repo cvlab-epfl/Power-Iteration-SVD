@@ -106,7 +106,7 @@ elif norm == 'pcanormfloat':
 elif norm == 'pcanorm-norec':
     Norm = myPCANorm_noRec
 # net = VGG('VGG19')
-net = resnet18(Norm=Norm, num_classes=100)  # resnet18(Norm=Norm)
+net = resnet50(Norm=Norm, num_classes=100)  # resnet18(Norm=Norm)
 # net = PreActResNet18()
 # net = GoogLeNet()
 # net = DenseNet121()
@@ -121,8 +121,8 @@ net = resnet18(Norm=Norm, num_classes=100)  # resnet18(Norm=Norm)
 save_dir = 'runs'
 model_name = net._get_name()
 id = randint(0, 1000)
-logdir = os.path.join(save_dir, 'cifar100', model_name+'18'+'_zcapi8group', '{}-bs{}'.format(norm, BatchSize), str(id))  # _bn _1layer95pct29pi
-# _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug,  _zcapi1group
+logdir = os.path.join(save_dir, 'cifar100', model_name+'50'+'_zcapi8group', '{}-bs{}'.format(norm, BatchSize), str(id))
+# _1layer95pct29pi _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug,  _zcapi1group
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 
@@ -333,7 +333,7 @@ def test(epoch):
             'acc': acc,
             'epoch': epoch,
             'optimizer': optimizer.state_dict(),
-            'scheduler': scheduler,
+            'scheduler': scheduler.state_dict(),
         }
         # if not os.path.isdir('checkpoint'):
         #     os.mkdir('checkpoint')
