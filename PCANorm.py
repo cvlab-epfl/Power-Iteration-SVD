@@ -561,7 +561,7 @@ class myPCANormfloat(nn.Module):
         self.momentum = momentum
         self.affine = affine
         self.n_power_iterations = n_power_iterations
-        self.n_eigens = num_features  # int(num_features/2)
+        self.n_eigens = 2  # num_features  # int(num_features/2)
 
         self.weight = Parameter(torch.Tensor(num_features, 1))
         self.bias = Parameter(torch.Tensor(num_features, 1))
@@ -615,21 +615,28 @@ class myPCANormfloat(nn.Module):
             lambda_sum_gt = 0
             with torch.no_grad():
                 u, e, v = torch.svd(xxt)
+                # ei = e[0:-1]
+                # eip1 = e[1::]
+                # ei_eip1 = (eip1/ei).mean()
+                # print(ei_eip1.item())
                 for i in range(self.n_eigens):
                     self.eig_dict[str(i)] = v[:, i][..., None]
 
             for i in range(self.n_eigens):
-                if e[i].item() < self.eps:
-                    print('eigenvalue smaller than threshold {}..'.format(self.eps))
-                    break
                 self.eig_dict[str(i)] = self.power_layer(xxt, self.eig_dict[str(i)])
                 counter += 1
-                lambda_sum_gt += e[i]
-                energy_lower_bound_gt = lambda_sum_gt/e.sum()
-                if energy_lower_bound_gt >= 0.95:
-                    # print('{}/{} eigen-vectors selected'.format(i+1, self.num_features))
-                    break
                 xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
+                # if e[i].item() < self.eps:
+                #     print('eigenvalue smaller than threshold {}..'.format(self.eps))
+                #     break
+                # self.eig_dict[str(i)] = self.power_layer(xxt, self.eig_dict[str(i)])
+                # counter += 1
+                # lambda_sum_gt += e[i]
+                # xxt = xxt - torch.mm(torch.mm(xxt, self.eig_dict[str(i)]), self.eig_dict[str(i)].t())
+                # energy_lower_bound_gt = lambda_sum_gt / e.sum()
+                # if energy_lower_bound_gt >= 0.99:
+                #     # print('{}/{} eigen-vectors selected'.format(i+1, self.num_features))
+                #     break
 
             xr = torch.zeros_like(x.t())
             for i in range(counter):

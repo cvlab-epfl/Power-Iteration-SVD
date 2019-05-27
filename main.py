@@ -120,8 +120,8 @@ net = resnet18(Norm=Norm, num_classes=10)  # resnet18(Norm=Norm)
 
 save_dir = 'runs'
 model_name = net._get_name()
-id = randint(0, 1000)
-logdir = os.path.join(save_dir, 'cifar10', model_name+'18'+'_zcapi8group', '{}-bs{}'.format(norm, BatchSize), str(id))
+id = 930  # randint(0, 1000)
+logdir = os.path.join(save_dir, model_name+'18'+'speed-', '{}-bs{}'.format(norm, BatchSize), str(id))
 # _1layer95pct29pi _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug,  _zcapi1group
 if not os.path.isdir(logdir):
     os.makedirs(logdir)

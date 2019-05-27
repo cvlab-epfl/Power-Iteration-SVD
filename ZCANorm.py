@@ -134,7 +134,7 @@ class ZCANormOrg(nn.Module):
 
 
 class ZCANormPI(nn.Module):
-    def __init__(self, num_features, groups=8, eps=1e-4, momentum=0.1, affine=True):
+    def __init__(self, num_features, groups=1, eps=1e-4, momentum=0.1, affine=True):
         super(ZCANormPI, self).__init__()
         self.num_features = num_features
         self.eps = eps
@@ -399,7 +399,7 @@ def l2normalize(v, eps=1e-12):
 
 
 class ZCANormPIunstable(nn.Module):
-    def __init__(self, num_features, groups=8, eps=1e-4, momentum=0.1, affine=True):
+    def __init__(self, num_features, groups=1, eps=1e-4, momentum=0.1, affine=True):
         super(ZCANormPIunstable, self).__init__()
         self.num_features = num_features
         self.eps = eps

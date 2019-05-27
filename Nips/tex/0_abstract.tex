@@ -1,7 +1,0 @@
-% !TEX root = ../top.tex
-% !TEX spellcheck = en-US
-
-%%%%%%%%% ABSTRACT
-\begin{abstract}
-Singular Value Decomposition (SVD) has been widely used in deep learning, and matrix backpropagation algorithm is applied to compute the gradients. However, matrix backpropagation is numerically unstable as it involves the computation of reciprocal of the difference of arbitrary pair of eigenvalues which will cause overflow if the difference between the two eigenvalues are very small. In this paper, we propose to employ Power Iteration (PI) method to approximate the gradients of SVD during backpropagation. It can be proved that when the iteration number of PI goes to infinite, the gradients computed via PI will equal to the gradients of SVD. In other words, the gradients computed via PI can be viewed as the geometric series expansion of the gradients of SVD. The experimental results demonstrate that the proposed method, which uses SVD as forward pass and PI as backward pass, is more stable than SVD or PI. Besides, we also employs the numerically stable SVD to design a denoising layer by removing small eigenvalues during reconstruction, and it can boost the performance of the network.
-\end{abstract}

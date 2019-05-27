@@ -1,6 +1,16 @@
 # Don't track content of these folder/
 .idea/
-# matlab/
+matlab/
+
+# latex
+*.aux
+*.log
+*.out
+*.gz
+*.blg
+*.svg
+*.graffle
+*.eps
 
 # Compiled source #
 ###################
