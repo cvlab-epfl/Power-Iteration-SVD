@@ -76,7 +76,7 @@ def calc_mid(M, v_k, v_k1, dL_dvk1):
 
 class power_iteration_once(th.autograd.Function):
     @staticmethod
-    def forward(ctx, M, v_k, num_iter=2):
+    def forward(ctx, M, v_k, num_iter=19):
         '''
         :param ctx: used to save meterials for backward.
         :param M: n by n matrix.
