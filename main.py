@@ -89,8 +89,6 @@ elif norm == 'layernorm':
     Norm = nn.LayerNorm
 elif norm == 'zcanorm':
     Norm = myZCANorm
-elif norm == 'zcanormfloat':
-    Norm = myZCANormfloat
 elif norm == 'zcanormorg':
     Norm = ZCANormOrg
 elif norm == 'zcanormpi':
@@ -105,8 +103,11 @@ elif norm == 'pcanormfloat':
     Norm = myPCANormfloat
 elif norm == 'pcanorm-norec':
     Norm = myPCANorm_noRec
+elif norm == 'zcanormfloatv2':
+    Norm = ZCANormPIv2
 # net = VGG('VGG19')
 net = resnet18(Norm=Norm, num_classes=10)  # resnet18(Norm=Norm)
+# net = resnet18nips(Norm=Norm, num_classes=10)
 # net = PreActResNet18()
 # net = GoogLeNet()
 # net = DenseNet121()
@@ -118,10 +119,10 @@ net = resnet18(Norm=Norm, num_classes=10)  # resnet18(Norm=Norm)
 # net = SENet18()
 # net = ShuffleNetV2(1)
 
-save_dir = 'runs'
+save_dir = 'rebuttal'  # 'runs'
 model_name = net._get_name()
-id = 930  # randint(0, 1000)
-logdir = os.path.join(save_dir, model_name+'18'+'speed-', '{}-bs{}'.format(norm, BatchSize), str(id))
+id = randint(0, 1000)
+logdir = os.path.join(save_dir, model_name+'18'+'group4', '{}-bs{}'.format(norm, BatchSize), str(id))
 # _1layer95pct29pi _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug,  _zcapi1group
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
