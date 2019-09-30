@@ -70,60 +70,26 @@ trainloader = torch.utils.data.DataLoader(trainset, batch_size=BatchSize, shuffl
 testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(testset, batch_size=BatchSize, shuffle=False, num_workers=2)
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-
-# Model
 norm = args.norm
 print('==> Building model using {}..'.format(norm))
 if norm == 'batchnorm':
     Norm = nn.BatchNorm2d
-elif norm == 'mybatchnorm':
-    Norm = myBatchNorm
-elif norm == 'groupnorm':
-    Norm = nn.GroupNorm
-elif norm == 'mygroupnorm':
-    Norm = myGroupNorm  # myGroupNorm
-elif norm == 'instancenorm':
-    Norm = nn.InstanceNorm2d
-elif norm == 'layernorm':
-    Norm = nn.LayerNorm
-elif norm == 'zcanorm':
-    Norm = myZCANorm
-elif norm == 'zcanormorg':
-    Norm = ZCANormOrg
-elif norm == 'zcanormpi':
-    Norm = ZCANormPI
+elif norm == 'zcanormsvdunstable':
+    Norm = ZCANormSVDunstable
 elif norm == 'zcanormpiunstable':
     Norm = ZCANormPIunstable
-elif norm == 'zcanormpidebug':
-    Norm = ZCANormPI_debug
-elif norm == 'pcanorm':
-    Norm = myPCANorm
-elif norm == 'pcanormfloat':
-    Norm = myPCANormfloat
-elif norm == 'pcanorm-norec':
-    Norm = myPCANorm_noRec
-elif norm == 'zcanormfloatv2':
-    Norm = ZCANormPIv2
-# net = VGG('VGG19')
-net = resnet18(Norm=Norm, num_classes=10)  # resnet18(Norm=Norm)
-# net = resnet18nips(Norm=Norm, num_classes=10)
-# net = PreActResNet18()
-# net = GoogLeNet()
-# net = DenseNet121()
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
+elif norm == 'zcanormsvdpi':
+    Norm = ZCANormSVDPI
+elif norm == 'pcanormsvdpi':
+    Norm = myPCANormSVDPI
 
-save_dir = 'rebuttal'  # 'runs'
+
+net = resnet18(Norm=Norm, num_classes=10)  # resnet18(Norm=Norm)
+
+save_dir = 'runs/cifar10'  # ''
 model_name = net._get_name()
 id = randint(0, 1000)
 logdir = os.path.join(save_dir, model_name+'18'+'group4', '{}-bs{}'.format(norm, BatchSize), str(id))
-# _1layer95pct29pi _zcapi4group100pct19pi, _zcapi8group100pct19pi-debug,  _zcapi1group
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 
@@ -153,9 +119,6 @@ if args.resume:
     scheduler.load_state_dict(checkpoint['scheduler'])
     optimizer.load_state_dict(checkpoint['optimizer'])
 
-# Training
-# net.load_state_dict(torch.load('net-31-1188.pt'))
-
 
 def train(epoch):
     print('\nEpoch: %d' % epoch)
@@ -163,33 +126,10 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
-    # loss_tm1 = 0
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
 
-        # for n, p in net.named_parameters():
-        #     if p.requires_grad:
-        #         if (p.data != p.data).any():
-        #             print('net param {} weights contains NaN..'.format(n))
-        #             print(p.data)
-        #             while True:
-        #                 sleep(1)
-
         optimizer.zero_grad()
-        # inputs = torch.load('input-31-1188.pt')
-        # targets = torch.load('target-31-1188.pt')
-        # start_time = time.time()
-
-        # outputs = net(inputs)
-
-        # elapsed_time = time.time() - start_time
-        # print('forward consumes time: {}'.format(elapsed_time))
-        # embed()
-        # dot = make_dot(outputs, params=dict(net.named_parameters()))
-        # dot.render(str(batch_idx))
-
-        # loss = criterion(outputs, targets)
-
         outputs = net(inputs)
         loss = criterion(outputs, targets)
 
@@ -204,86 +144,6 @@ def train(epoch):
             sys.exit("Error message")
 
         loss.backward()
-
-        # try:
-        #     outputs = net(inputs)
-        #     loss = criterion(outputs, targets)
-        #     loss.backward()
-        # except:
-        #     print("hi")
-        #     # if hasattr(torch.cuda, 'empty_cache'):
-        #     #     loss = None
-        #     #     torch.cuda.empty_cache()
-        #     continue
-
-        # print('loss {}'.format(loss))
-
-        # if math.isnan(loss):
-        #     print('loss contains nan')
-        #     print('checking if input contains nan..')
-        #     if (inputs != inputs).any():
-        #         print('input contains nan')
-        #     else:
-        #         print('input has no nan')
-        #
-        #     print('checking if input contains all 0s..')
-        #     if inputs.sum().item() == 0:
-        #         print('input is all 0s')
-        #     else:
-        #         print('input has no 0')
-        #
-        #     print('saving inputs targets net optimizer..')
-        #     torch.save(inputs, 'input-{}-{}.pt'.format(epoch, batch_idx))
-        #     torch.save(targets, 'target-{}-{}.pt'.format(epoch, batch_idx))
-        #     torch.save(net.state_dict(), 'net-{}-{}.pt'.format(epoch, batch_idx))
-        #     torch.save(optimizer.state_dict(), 'optimizer-{}-{}.pt'.format(epoch, batch_idx))
-        #     while True:
-        #         sleep(1)
-        # print('backwarding..')
-
-        # loss.backward()
-
-        # loss_diff = np.abs(loss_tm1 - loss.item())
-
-        # d = dict(net.named_buffers())
-        # for key, value in d.items():
-        #     print(key, value.shape)
-        # for n, p in net.named_parameters():
-        #     print('name: {}, shape: {}'.format(n, p.shape))
-
-        # writer.add_scalar('grad/loss', loss.item(), epoch * len(trainloader) + batch_idx + 1)
-        # for n, p in net.named_parameters():
-        #     if p.requires_grad and("layer1" not in n) and ("layer2" not in n) and ("layer3" not in n) and ("layer4" not in n):
-        #         writer.add_scalar('grad/{}mean'.format(n), p.grad.abs().mean().item(), epoch * len(trainloader) + batch_idx + 1)
-        #         writer.add_scalar('grad/{}max'.format(n), p.grad.abs().max().item(), epoch * len(trainloader) + batch_idx + 1)
-
-        # loss_tm1 = loss.item()
-        # for n, p in net.named_parameters():
-        #     if p.requires_grad:
-        #         if (p.grad != p.grad).any():
-        #             print('net {} param gradient contains NaN..'.format(n))
-        #             print('loss is {}'.format(loss))
-        #             print('saving inputs targets net optimizer..')
-        #             torch.save(inputs, 'grad-input-{}-{}.pt'.format(epoch, batch_idx))
-        #             torch.save(targets, 'grad-target-{}-{}.pt'.format(epoch, batch_idx))
-        #             torch.save(net.state_dict(), 'grad-net-{}-{}.pt'.format(epoch, batch_idx))
-        #             torch.save(optimizer.state_dict(), 'grad-optimizer-{}-{}.pt'.format(epoch, batch_idx))
-        #             while True:
-        #                 sleep(1)
-        #         else:
-        #             print('net {} param gradient is OK'.format(n))
-        #         if (p.data != p.data).any():
-        #             print('net {} param weights contains NaN..'.format(n))
-        #             print('loss is {}'.format(loss))
-        #             print('saving inputs targets net optimizer..')
-        #             torch.save(inputs, 'weight-input-{}-{}.pt'.format(epoch, batch_idx))
-        #             torch.save(targets, 'weight-target-{}-{}.pt'.format(epoch, batch_idx))
-        #             torch.save(net.state_dict(), 'weight-net-{}-{}.pt'.format(epoch, batch_idx))
-        #             torch.save(optimizer.state_dict(), 'weight-optimizer-{}-{}.pt'.format(epoch, batch_idx))
-        #             while True:
-        #                 sleep(1)
-        #         else:
-        #             print('net {} param weights is OK'.format(n))
 
         optimizer.step()
         if batch_idx % 500 == 0:

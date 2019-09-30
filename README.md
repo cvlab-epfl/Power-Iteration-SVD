@@ -33,7 +33,7 @@ the `lr` is changed as follows:
 - `0.1` for epoch `[0,100)`
 - `0.01` for epoch `[100,200)`
 - `0.001` for epoch `[200,300)`
-- `0.0001` for epoch `[200,350)`
+- `0.0001` for epoch `[300,350)`
 
 ##
 The pytorch must be GPU version, as we have not test the code on CPU machine.
@@ -43,12 +43,12 @@ Here are the code for training ResNet18 on CIFAR10 & CIFAR100
 
 ## training
 On CIFAR10 Dataset: \
-run ZCA whitening: `python main.py --norm=zcanormpi` \
-run PCA denpoising: `python main.py --norm=pcanormfloat`
+run ZCA whitening: `python main.py --norm=zcanormsvdpi` \
+run PCA denpoising: `python main.py --norm=pcanormsvdpi`
 
 On CIFAR100 Dataset: \
-run ZCA whitening: `python main_cifar100.py --norm=zcanormpi` \
-run PCA denpoising: `python main_cifar100.py --norm=pcanormfloat`
+run ZCA whitening: `python main_cifar100.py --norm=zcanormsvdpi` \
+run PCA denpoising: `python main_cifar100.py --norm=pcanormsvdpi`
 
 ## requirement
 The code might not be compatible with lower version of the specified packages.
@@ -62,5 +62,14 @@ Numpy >= 1.16.3
 tensorboardX
 ```
 
+## Paper
+```
+@inproceedings{wang2019backpropagation,
+  title={Backpropagation-Friendly Eigendecomposition},
+  author={Wang, Wei and Dang, Zheng and Hu, Yinlin and Fua, Pascal and Salzmann, Mathieu},
+  booktitle={Advances in neural information processing systems},
+  year={2019}
+}
+```
 ## Acknowledgement
 The code is heavily based on [pytorch-cifar][https://github.com/kuangliu/pytorch-cifar]
