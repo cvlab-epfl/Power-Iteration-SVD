@@ -1,6 +1,6 @@
 # Backpropagation-Friendly Eigendecomposition
 Eigendecomposition (ED) is widely used in deep networks. However, the backpropagation of its results tends to be numerically unstable, whether using ED directly or approximating it with the Power Iteration method, particularly when dealing with large matrices. While this can be mitigated by partitioning the data in small and arbitrary groups, doing so has no theoretical basis and makes its impossible to exploit the power of ED to the full. We introduce a numerically stable and differentiable approach to leveraging eigenvectors in deep networks. It can handle large symmetric square matrices without requiring to split them.
-
+## Github Code
 ## Pros & cons
 Pros:
 - Numerically Stable.
