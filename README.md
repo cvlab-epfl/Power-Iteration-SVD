@@ -14,8 +14,8 @@ Cons:
 ZCA layer is nested at the bottom of the first residual block of ResNet.
 The 64 channels are partitioned into N groups and each group has d=64/N channels.
 The covariance matrix is computed for each group with the dimension of d.
-
-
+## Poster
+![Image of Poster](https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf)
 ## Accuracy on Cifar10
 | Model             |Dim. (d)| Min Acc.    | Mean Acc.  |
 | ----------------- | ------ | ----------- |----------- |
