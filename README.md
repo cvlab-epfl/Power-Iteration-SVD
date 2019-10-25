@@ -15,6 +15,11 @@ ZCA layer is nested at the bottom of the first residual block of ResNet.
 The 64 channels are partitioned into N groups and each group has d=64/N channels.
 The covariance matrix is computed for each group with the dimension of d.
 ## Poster
+<object data="https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf" type="application/pdf" width="1400px" height="700px">
+    <embed src="https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf">
+        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf">Download PDF</a>.</p>
+    </embed>
+</object>
 ![Image of Poster](https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf)
 ## Accuracy on Cifar10
 | Model             |Dim. (d)| Min Acc.    | Mean Acc.  |
