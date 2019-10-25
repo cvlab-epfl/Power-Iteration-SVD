@@ -20,7 +20,7 @@ The covariance matrix is computed for each group with the dimension of d.
         <p>This browser does not support PDFs. Please download the PDF to view it: <a href="https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf">Download PDF</a>.</p>
     </embed>
 </object>
-![Image of Poster](https://github.com/WeiWangTrento/Power-Iteration-SVD/blob/master/poster.pdf)
+
 ## Accuracy on Cifar10
 | Model             |Dim. (d)| Min Acc.    | Mean Acc.  |
 | ----------------- | ------ | ----------- |----------- |
