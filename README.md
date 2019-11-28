@@ -22,7 +22,7 @@ The covariance matrix is computed for each group with the dimension of d.
 </object>
 
 ## Accuracy on Cifar10
-| Model             |Dim. (d)| Min Acc.    | Mean Acc.  |
+| Model             |Dim. (d)| Max Acc.    | Mean Acc.  |
 | ----------------- | ------ | ----------- |----------- |
 | ResNet18          | -      | 93.02%      | -     |
 | ResNet18+ZCA      | 4      | 95.41%      | 95.29±0.11%     |
